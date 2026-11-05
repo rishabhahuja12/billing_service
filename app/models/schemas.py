@@ -44,6 +44,7 @@ class UsageEventResponse(BaseModel):
     cost_microcents: int
     cost_cents: int
     timestamp: datetime
+    response_payload: Optional[str] = None
     is_duplicate: bool = False
 
 class GenerateRequest(BaseModel):

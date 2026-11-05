@@ -113,8 +113,16 @@ def generate_ai_text(
 
     meter_res, is_duplicate = MeterService.record_usage(db, event_payload)
 
-    # Return simulated LLM response
-    return {
+    if is_duplicate and meter_res.response_payload:
+        try:
+            cached_data = json.loads(meter_res.response_payload)
+            cached_data["usage"]["idempotency_cached"] = True
+            return cached_data
+        except Exception:
+            pass
+
+    # Generate simulated LLM response
+    result_body = {
         "text": f"Simulated response to '{request.prompt[:30]}...' with {request.simulated_output_tokens} completion tokens.",
         "usage": {
             "input_tokens": request.simulated_input_tokens,
@@ -126,6 +134,12 @@ def generate_ai_text(
             "idempotency_cached": is_duplicate
         }
     }
+
+    # Cache response payload on the recorded event if new
+    if not is_duplicate:
+        MeterService.attach_response_payload(db, meter_res.id, json.dumps(result_body))
+
+    return result_body
 
 # --- Usage Rollup & Reporting ---
 @api_router.get("/customers/{tenant_id}/usage", response_model=UsageSummaryResponse)

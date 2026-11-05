@@ -108,3 +108,14 @@ class MeterService:
         resp = UsageEventResponse.model_validate(new_event)
         resp.is_duplicate = False
         return resp, False
+
+    @staticmethod
+    def attach_response_payload(db: Session, event_id: str, payload_str: str):
+        """Attaches serialized API response payload to event for exact idempotent reply mirroring."""
+        try:
+            event = db.query(UsageEvent).filter(UsageEvent.id == event_id).first()
+            if event:
+                event.response_payload = payload_str
+                db.commit()
+        except Exception:
+            db.rollback()

@@ -36,9 +36,9 @@ class PricingEngine:
         total_microcents = input_microcents + cached_microcents + output_microcents
 
         # Convert microcents to cents (1 cent = 1000 microcents)
-        # Using ceil to protect revenue from sub-cent truncation
+        # Integer ceiling division: (total_mc + 999) // 1000
         if total_microcents > 0:
-            cents = math.ceil(total_microcents / 1000)
+            cents = (total_microcents + 999) // 1000
         else:
             cents = 0
 
@@ -49,5 +49,5 @@ class PricingEngine:
         """Calculates cost for API call requests."""
         cfg = settings.PRICING
         total_microcents = quantity * cfg.API_CALL_MICROCENTS
-        cents = math.ceil(total_microcents / 1000) if total_microcents > 0 else 0
+        cents = (total_microcents + 999) // 1000 if total_microcents > 0 else 0
         return total_microcents, cents
