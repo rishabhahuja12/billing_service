@@ -52,6 +52,11 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+:focus-visible {
+  outline: 2px solid #82B1FF;
+  outline-offset: 2px;
+}
+
 html { height: 100%; }
 
 body {
@@ -62,6 +67,18 @@ body {
   line-height: 1.5;
   color: var(--text-main);
   padding: 0 1rem 3rem;
+}
+
+.td-mono, .metric-panel-num, .telemetry-val {
+  font-variant-numeric: tabular-nums;
+}
+
+.num-col {
+  text-align: right;
+}
+
+.ctrl-btn:active, .preset-pill:active {
+  transform: translateY(1px);
 }
 
 /* ========================================================================
@@ -793,9 +810,9 @@ body {
             <th scope="col">Invoice ID</th>
             <th scope="col">Customer</th>
             <th scope="col">Issued Timestamp</th>
-            <th scope="col">Total USD</th>
-            <th scope="col">Tokens</th>
-            <th scope="col">Events</th>
+            <th scope="col" class="num-col">Total USD</th>
+            <th scope="col" class="num-col">Tokens</th>
+            <th scope="col" class="num-col">Events</th>
             <th scope="col">Status</th>
           </tr>
         </thead>
@@ -1083,23 +1100,24 @@ body {
         <td class="td-mono" style="color:var(--text-dim);">${escapeHtml(invId)}</td>
         <td class="td-mono">${escapeHtml(cust)}</td>
         <td style="color:var(--text-muted);">${created}</td>
-        <td class="td-mono" style="font-weight:700; color:var(--text-pure);">$${usdStr}</td>
-        <td class="td-mono" style="color:var(--text-muted);">${tokens}</td>
-        <td class="td-mono" style="color:var(--text-muted);">${events}</td>
+        <td class="td-mono num-col" style="font-weight:700; color:var(--text-pure);">$${usdStr}</td>
+        <td class="td-mono num-col" style="color:var(--text-muted);">${tokens}</td>
+        <td class="td-mono num-col" style="color:var(--text-muted);">${events}</td>
         <td><span class="badge-state ${badgeCls}">${status}</span></td>
       `;
       tbody.appendChild(tr);
     });
   }
 
-  /* Initialization */
+  /* Initialization — parallelized via Promise.allSettled to eliminate network waterfalls */
   (async function boot() {
-    await checkHealth();
-    await refreshMetrics();
-    await loadInvoices();
+    await Promise.allSettled([
+      checkHealth(),
+      refreshMetrics(),
+      loadInvoices()
+    ]);
     setInterval(() => {
-      checkHealth();
-      refreshMetrics();
+      Promise.allSettled([checkHealth(), refreshMetrics()]);
     }, 60000);
   })();
 </script>
