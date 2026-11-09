@@ -1,1074 +1,939 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Billing Engine — Metering Dashboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,500;0,600;1,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <style>
-    /* ========================================================================
-       DESIGN TOKENS — Warm editorial palette (from study_tracker & turnitout)
-       ======================================================================== */
-    :root {
-      --bg-canvas:        #FAF8F5;
-      --bg-surface:       #FFFFFF;
-      --bg-surface-alt:   #F5F2ED;
-      --text-main:        #2C2C2C;
-      --text-subtle:      #6B6B6B;
-      --text-faint:       #9E9E9E;
-      --border:           #E8E6E1;
-      --border-strong:    #D5D2CC;
-
-      --accent-clay:      #CC785C;        /* primary action */
-      --accent-clay-bg:   rgba(204,120,92,0.08);
-      --accent-amber:     #E29547;        /* warning / highlight */
-      --accent-amber-bg:  #FDF6EE;
-      --accent-green:     #2E7D32;        /* success */
-      --accent-green-bg:  #E8F5E9;
-      --accent-red:       #C62828;        /* danger */
-      --accent-red-bg:    #FFEBEE;
-      --accent-blue:      #1565C0;        /* info / link */
-      --accent-blue-bg:   #E3F2FD;
-
-      --font-serif:  'Lora', Georgia, serif;
-      --font-sans:   'Inter', system-ui, -apple-system, sans-serif;
-      --font-mono:   'JetBrains Mono', 'Courier New', monospace;
-
-      --radius-sm:   4px;
-      --radius:      8px;
-      --radius-lg:   12px;
-      --shadow-xs:   0 1px 3px rgba(0,0,0,0.04);
-      --shadow-sm:   0 2px 8px rgba(0,0,0,0.06);
-      --shadow-md:   0 4px 16px rgba(0,0,0,0.08);
-    }
-
-    [data-theme="dark"] {
-      --bg-canvas:        #1A1A1A;
-      --bg-surface:       #242424;
-      --bg-surface-alt:   #2E2E2E;
-      --text-main:        #E0DEDA;
-      --text-subtle:      #9E9E9E;
-      --text-faint:       #6B6B6B;
-      --border:           #333333;
-      --border-strong:    #444444;
-      --accent-clay-bg:   rgba(204,120,92,0.14);
-      --accent-amber-bg:  #2C241B;
-      --accent-green-bg:  #1B2E1C;
-      --accent-red-bg:    #2C1B1B;
-      --accent-blue-bg:   #0D1E35;
-    }
-
-    /* ========================================================================
-       RESET & BASE
-       ======================================================================== */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: var(--font-sans);
-      background: var(--bg-canvas);
-      color: var(--text-main);
-      font-size: 14px;
-      line-height: 1.55;
-      transition: background 0.2s, color 0.2s;
-      overflow-x: hidden;
-    }
-
-    /* ========================================================================
-       TOP NAV
-       ======================================================================== */
-    .top-nav {
-      position: sticky;
-      top: 0;
-      z-index: 200;
-      background: var(--bg-surface);
-      border-bottom: 1px solid var(--border);
-      padding: 0 1.5rem;
-      height: 52px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      box-shadow: var(--shadow-xs);
-    }
-
-    .nav-left {
-      display: flex;
-      align-items: center;
-      gap: 1.25rem;
-    }
-
-    .brand {
-      display: flex;
-      align-items: baseline;
-      gap: 0.5rem;
-      text-decoration: none;
-      color: inherit;
-    }
-
-    .brand-name {
-      font-family: var(--font-serif);
-      font-weight: 600;
-      font-size: 1.1rem;
-      color: var(--text-main);
-      letter-spacing: -0.015em;
-    }
-
-    .brand-tag {
-      font-family: var(--font-mono);
-      font-size: 0.68rem;
-      color: var(--accent-clay);
-      font-weight: 600;
-      background: var(--accent-clay-bg);
-      padding: 0.12rem 0.45rem;
-      border-radius: var(--radius-sm);
-      letter-spacing: 0.04em;
-    }
-
-    .nav-divider {
-      width: 1px;
-      height: 20px;
-      background: var(--border);
-    }
-
-    .tenant-selector {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.8rem;
-    }
-
-    .tenant-label {
-      color: var(--text-subtle);
-      font-weight: 500;
-    }
-
-    .tenant-select {
-      border: 1px solid var(--border);
-      background: var(--bg-surface);
-      color: var(--text-main);
-      font-family: var(--font-mono);
-      font-size: 0.8rem;
-      font-weight: 600;
-      padding: 0.28rem 0.65rem;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      outline: none;
-      transition: border-color 0.15s;
-    }
-
-    .tenant-select:focus { border-color: var(--accent-clay); }
-
-    .nav-right {
-      display: flex;
-      align-items: center;
-      gap: 0.65rem;
-    }
-
-    .nav-btn {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text-subtle);
-      padding: 0.3rem 0.65rem;
-      border-radius: var(--radius-sm);
-      font-family: var(--font-sans);
-      font-size: 0.75rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.15s;
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
-    }
-
-    .nav-btn:hover {
-      border-color: var(--border-strong);
-      color: var(--text-main);
-    }
-
-    .nav-btn.primary {
-      background: var(--text-main);
-      border-color: var(--text-main);
-      color: var(--bg-canvas);
-    }
-
-    .nav-btn.primary:hover {
-      background: var(--accent-clay);
-      border-color: var(--accent-clay);
-    }
-
-    .status-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--accent-green);
-      display: inline-block;
-      flex-shrink: 0;
-    }
-
-    /* ========================================================================
-       MAIN LAYOUT
-       ======================================================================== */
-    .workspace {
-      max-width: 1440px;
-      margin: 0 auto;
-      padding: 1.5rem clamp(1rem, 2.5vw, 2rem);
-    }
-
-    /* ========================================================================
-       SECTION HEADERS
-       ======================================================================== */
-    .section-header {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      margin-bottom: 0.85rem;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-
-    .section-title {
-      font-family: var(--font-serif);
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: var(--text-main);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .section-title::before {
-      content: '';
-      display: inline-block;
-      width: 3px;
-      height: 14px;
-      background: var(--accent-clay);
-      border-radius: 2px;
-    }
-
-    .section-meta {
-      font-size: 0.72rem;
-      color: var(--text-faint);
-      font-family: var(--font-mono);
-    }
-
-    /* ========================================================================
-       METRIC CARDS
-       ======================================================================== */
-    .metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
-      gap: 0.85rem;
-      margin-bottom: 1.75rem;
-    }
-
-    .metric-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.1rem 1.25rem;
-      position: relative;
-      transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
-      cursor: default;
-      overflow: hidden;
-    }
-
-    .metric-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 2px;
-      background: var(--accent-color, var(--border));
-      border-radius: var(--radius) var(--radius) 0 0;
-    }
-
-    .metric-card:hover {
-      border-color: var(--border-strong);
-      box-shadow: var(--shadow-sm);
-      transform: translateY(-1px);
-    }
-
-    .metric-card.clay  { --accent-color: var(--accent-clay); }
-    .metric-card.amber { --accent-color: var(--accent-amber); }
-    .metric-card.green { --accent-color: var(--accent-green); }
-    .metric-card.blue  { --accent-color: var(--accent-blue); }
-
-    .metric-label {
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--text-faint);
-      margin-bottom: 0.5rem;
-    }
-
-    .metric-value {
-      font-family: var(--font-mono);
-      font-size: 1.75rem;
-      font-weight: 600;
-      color: var(--text-main);
-      line-height: 1.1;
-      letter-spacing: -0.02em;
-    }
-
-    .metric-value.loading {
-      color: var(--border-strong);
-    }
-
-    .metric-sub {
-      font-size: 0.72rem;
-      color: var(--text-subtle);
-      margin-top: 0.4rem;
-      font-family: var(--font-mono);
-    }
-
-    .metric-badge {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      font-size: 1.1rem;
-      opacity: 0.5;
-    }
-
-    /* ========================================================================
-       TWO-COLUMN GRID
-       ======================================================================== */
-    .two-col {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.25rem;
-      margin-bottom: 1.75rem;
-    }
-
-    @media (max-width: 860px) {
-      .two-col { grid-template-columns: 1fr; }
-    }
-
-    /* ========================================================================
-       PANEL (generic surface)
-       ======================================================================== */
-    .panel {
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-    }
-
-    .panel-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.85rem 1.1rem;
-      border-bottom: 1px solid var(--border);
-      background: var(--bg-surface-alt);
-    }
-
-    .panel-title {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--text-main);
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-
-    .panel-body { padding: 1.1rem; }
-
-    /* ========================================================================
-       TIER BADGE
-       ======================================================================== */
-    .tier-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      padding: 0.2rem 0.6rem;
-      border-radius: var(--radius-sm);
-      font-family: var(--font-mono);
-      font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-
-    .tier-chip.starter  { background: var(--accent-blue-bg);  color: var(--accent-blue); }
-    .tier-chip.growth   { background: var(--accent-green-bg); color: var(--accent-green); }
-    .tier-chip.scale    { background: var(--accent-amber-bg); color: var(--accent-amber); }
-    .tier-chip.enterprise { background: var(--accent-clay-bg); color: var(--accent-clay); }
-
-    /* ========================================================================
-       EVENT SIMULATOR FORM
-       ======================================================================== */
-    .sim-form {
-      display: flex;
-      flex-direction: column;
-      gap: 0.65rem;
-    }
-
-    .form-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.65rem;
-    }
-
-    .form-group { display: flex; flex-direction: column; gap: 0.3rem; }
-
-    .form-group label {
-      font-size: 0.72rem;
-      font-weight: 600;
-      color: var(--text-subtle);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .form-group input, .form-group select {
-      background: var(--bg-canvas);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      color: var(--text-main);
-      font-family: var(--font-mono);
-      font-size: 0.82rem;
-      padding: 0.42rem 0.7rem;
-      outline: none;
-      transition: border-color 0.15s;
-      width: 100%;
-    }
-
-    .form-group input:focus, .form-group select:focus {
-      border-color: var(--accent-clay);
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.4rem;
-      padding: 0.5rem 1rem;
-      border-radius: var(--radius-sm);
-      font-family: var(--font-sans);
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-      border: 1px solid transparent;
-      transition: all 0.15s;
-      white-space: nowrap;
-    }
-
-    .btn-primary {
-      background: var(--text-main);
-      color: var(--bg-canvas);
-      border-color: var(--text-main);
-    }
-
-    .btn-primary:hover {
-      background: var(--accent-clay);
-      border-color: var(--accent-clay);
-    }
-
-    .btn-secondary {
-      background: var(--bg-canvas);
-      color: var(--text-main);
-      border-color: var(--border);
-    }
-
-    .btn-secondary:hover {
-      border-color: var(--border-strong);
-    }
-
-    .btn-danger {
-      background: var(--accent-red-bg);
-      color: var(--accent-red);
-      border-color: rgba(198,40,40,0.25);
-    }
-
-    .btn-danger:hover {
-      background: var(--accent-red);
-      color: #fff;
-    }
-
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      pointer-events: none;
-    }
-
-    .btn-group {
-      display: flex;
-      gap: 0.5rem;
-      margin-top: 0.35rem;
-    }
-
-    /* ========================================================================
-       CONSOLE LOG
-       ======================================================================== */
-    .console-wrap {
-      background: #1A1A1A;
-      border-radius: var(--radius-sm);
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-      line-height: 1.6;
-      max-height: 220px;
-      overflow-y: auto;
-      padding: 0.85rem 1rem;
-    }
-
-    .console-line {
-      display: flex;
-      gap: 0.65rem;
-      margin-bottom: 0.2rem;
-      align-items: flex-start;
-    }
-
-    .console-ts {
-      color: #555;
-      flex-shrink: 0;
-      user-select: none;
-    }
-
-    .console-line.ok   .console-msg { color: #81C784; }
-    .console-line.err  .console-msg { color: #EF9A9A; }
-    .console-line.info .console-msg { color: #90CAF9; }
-    .console-line.warn .console-msg { color: #FFD54F; }
-    .console-line.sys  .console-msg { color: #666; font-style: italic; }
-
-    .console-wrap::-webkit-scrollbar { width: 4px; }
-    .console-wrap::-webkit-scrollbar-track { background: transparent; }
-    .console-wrap::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
-
-    /* ========================================================================
-       INVOICE TABLE
-       ======================================================================== */
-    .table-wrap {
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.8rem;
-    }
-
-    thead th {
-      font-size: 0.68rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--text-faint);
-      padding: 0.6rem 0.9rem;
-      border-bottom: 1px solid var(--border);
-      text-align: left;
-      background: var(--bg-surface-alt);
-      white-space: nowrap;
-    }
-
-    tbody td {
-      padding: 0.7rem 0.9rem;
-      border-bottom: 1px solid var(--border);
-      color: var(--text-main);
-      vertical-align: middle;
-    }
-
-    tbody tr:last-child td { border-bottom: none; }
-
-    tbody tr:hover td { background: var(--accent-clay-bg); }
-
-    .cell-mono {
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 0.15rem 0.5rem;
-      border-radius: var(--radius-sm);
-      font-family: var(--font-mono);
-      font-size: 0.65rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .badge-paid    { background: var(--accent-green-bg); color: var(--accent-green); }
-    .badge-draft   { background: var(--accent-amber-bg); color: var(--accent-amber); }
-    .badge-overdue { background: var(--accent-red-bg);   color: var(--accent-red); }
-
-    /* ========================================================================
-       HEALTH BAR
-       ======================================================================== */
-    .health-row {
-      display: flex;
-      align-items: center;
-      gap: 0.65rem;
-      padding: 0.65rem 1.1rem;
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      margin-bottom: 1.75rem;
-      font-size: 0.78rem;
-      flex-wrap: wrap;
-      gap: 0.5rem 1.25rem;
-    }
-
-    .health-item {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-
-    .health-label { color: var(--text-subtle); font-weight: 500; }
-    .health-val   { font-family: var(--font-mono); font-weight: 600; }
-    .health-val.ok  { color: var(--accent-green); }
-    .health-val.err { color: var(--accent-red); }
-
-    .health-sep {
-      width: 1px;
-      height: 14px;
-      background: var(--border);
-      flex-shrink: 0;
-    }
-
-    /* ========================================================================
-       SPINNER
-       ======================================================================== */
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .spinner {
-      display: inline-block;
-      width: 12px; height: 12px;
-      border: 2px solid var(--border);
-      border-top-color: var(--accent-clay);
-      border-radius: 50%;
-      animation: spin 0.6s linear infinite;
-      vertical-align: middle;
-    }
-
-    /* ========================================================================
-       TOAST NOTIFICATIONS
-       ======================================================================== */
-    .toast-stack {
-      position: fixed;
-      bottom: 1.25rem;
-      right: 1.25rem;
-      z-index: 999;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      max-width: 340px;
-    }
-
-    .toast {
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--accent-clay);
-      border-radius: var(--radius-sm);
-      padding: 0.7rem 1rem;
-      font-size: 0.78rem;
-      color: var(--text-main);
-      box-shadow: var(--shadow-md);
-      animation: toastIn 0.2s ease;
-    }
-
-    .toast.ok  { border-left-color: var(--accent-green); }
-    .toast.err { border-left-color: var(--accent-red); }
-    .toast.warn{ border-left-color: var(--accent-amber); }
-
-    @keyframes toastIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ========================================================================
-       MISC UTILITIES
-       ======================================================================== */
-    .empty-state {
-      text-align: center;
-      padding: 2.5rem 1rem;
-      color: var(--text-faint);
-      font-size: 0.82rem;
-      font-style: italic;
-    }
-
-    .refresh-spin { animation: spin 0.6s linear; }
-
-    hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
-
-    /* Theme toggle icon */
-    .theme-icon-sun  { display: none; }
-    .theme-icon-moon { display: inline; }
-    [data-theme="dark"] .theme-icon-sun  { display: inline; }
-    [data-theme="dark"] .theme-icon-moon { display: none; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Billing Engine · Usage Metering Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ========================================================================
+   TIMETABLE RACK — Industrial Metering Console
+   Design discipline: High contrast, strict typography floors (>=11px),
+   zero gradient halos, zero artificial side-tabs, solid calibrated materials.
+   ======================================================================== */
+
+:root {
+  /* Ground & Surfaces */
+  --bed-surface:     #E5C038;
+  --bed-border:      #9E8010;
+  --ink-primary:     #111110;
+  --ink-secondary:   #2E2C24;
+
+  /* Console Glass Panels (Slate Charcoal) */
+  --panel-bg:        #181B22;
+  --panel-surface:   #20242E;
+  --panel-border:    #343B4B;
+  --panel-border-hi: #485268;
+
+  /* Data & Typography (Strict WCAG AA >= 4.5:1) */
+  --text-pure:       #FFFFFF;
+  --text-main:       #E6E9F0;
+  --text-muted:      #9BA3B8;
+  --text-dim:        #7E879E;
+
+  /* Semantic Status Indicators */
+  --status-ok:       #2FC472;
+  --status-ok-bg:    rgba(47, 196, 114, 0.16);
+  --status-warn:     #F3B32A;
+  --status-warn-bg:  rgba(243, 179, 42, 0.16);
+  --status-err:      #F05448;
+  --status-err-bg:   rgba(240, 84, 72, 0.16);
+  --status-info:     #4D8DFE;
+  --status-info-bg:  rgba(77, 141, 254, 0.16);
+
+  /* Fonts */
+  --font-ui:   'IBM Plex Sans', -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  --r-sm: 3px;
+  --r-md: 6px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { height: 100%; }
+
+body {
+  min-height: 100%;
+  background-color: var(--bed-surface);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-main);
+  padding: 0 1rem 3rem;
+}
+
+/* ========================================================================
+   WORKBENCH CONTAINER
+   ======================================================================== */
+.workbench {
+  max-width: 1380px;
+  margin: 0 auto;
+}
+
+/* ========================================================================
+   MASTHEAD
+   ======================================================================== */
+.masthead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 1.25rem 0;
+  border-bottom: 2px solid var(--bed-border);
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.masthead-title-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.masthead-system {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-secondary);
+}
+
+.masthead-title {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 26px;
+  letter-spacing: -0.02em;
+  color: var(--ink-primary);
+  line-height: 1.1;
+}
+
+.masthead-specs {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-secondary);
+  margin-top: 2px;
+}
+
+.masthead-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.tenant-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--ink-primary);
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--r-sm);
+}
+
+.tenant-picker-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--bed-surface);
+}
+
+.tenant-picker-select {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #FFFFFF;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tenant-picker-select option {
+  background: #181B22;
+  color: #FFFFFF;
+}
+
+.ctrl-btn {
+  background: var(--ink-primary);
+  border: 1px solid transparent;
+  color: #FFFFFF;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0.5rem 0.95rem;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.ctrl-btn:hover {
+  background: #252830;
+}
+
+.ctrl-btn.primary {
+  background: #1B7844;
+  color: #FFFFFF;
+}
+
+.ctrl-btn.primary:hover {
+  background: #146135;
+}
+
+.ctrl-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ========================================================================
+   TELEMETRY STRIP (Vitals header)
+   ======================================================================== */
+.telemetry-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--r-sm);
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+}
+
+.telemetry-cell {
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem 1rem;
+  border-right: 1px solid var(--panel-border);
+}
+
+.telemetry-cell:last-child {
+  border-right: none;
+}
+
+.telemetry-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 0.2rem;
+}
+
+.telemetry-val {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.telemetry-val.ok { color: var(--status-ok); }
+.telemetry-val.err { color: var(--status-err); }
+
+.plan-chip {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.55rem;
+  border-radius: 2px;
+  width: fit-content;
+}
+.plan-chip.starter    { background: var(--status-info-bg); color: #82B1FF; }
+.plan-chip.growth     { background: var(--status-ok-bg);   color: #69F0AE; }
+.plan-chip.scale      { background: var(--status-warn-bg); color: #FFE57F; }
+.plan-chip.enterprise { background: var(--status-err-bg);  color: #FF8A80; }
+
+/* ========================================================================
+   METRIC SLIDES
+   ======================================================================== */
+.section-meta-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.65rem;
+}
+
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink-secondary);
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.85rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .metrics-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 500px) {
+  .metrics-grid { grid-template-columns: 1fr; }
+}
+
+.metric-panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--r-md);
+  padding: 1.15rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.15s;
+}
+
+.metric-panel:hover {
+  border-color: var(--panel-border-hi);
+}
+
+.metric-panel-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 0.45rem;
+}
+
+.metric-panel-num {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--text-pure);
+  margin-bottom: 0.35rem;
+}
+
+.metric-panel-num.loading {
+  font-size: 16px;
+  color: var(--text-muted);
+}
+
+.metric-panel-sub {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ========================================================================
+   OPERATING PANELS (2-Column Grid)
+   ======================================================================== */
+.workbench-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.15rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 860px) {
+  .workbench-cols { grid-template-columns: 1fr; }
+}
+
+.terminal-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.terminal-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.15rem;
+  background: var(--panel-surface);
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.terminal-card-title {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-main);
+}
+
+.terminal-card-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.terminal-card-body {
+  padding: 1.15rem;
+  flex: 1;
+}
+
+/* ========================================================================
+   SIMULATOR FORM CONTROLS
+   ======================================================================== */
+.sim-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.field-unit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.field-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.field-input, .field-select {
+  background: #111318;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--r-sm);
+  color: var(--text-main);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 0.5rem 0.75rem;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+
+.field-input:focus, .field-select:focus {
+  border-color: #82B1FF;
+}
+
+.preset-pill-group {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.preset-pill {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--panel-surface);
+  border: 1px solid var(--panel-border);
+  color: var(--text-main);
+  padding: 0.35rem 0.7rem;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.preset-pill:hover {
+  background: #2E3444;
+  border-color: var(--panel-border-hi);
+}
+
+.form-actions-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+/* ========================================================================
+   ACTIVITY CONSOLE LOG
+   ======================================================================== */
+.log-stream {
+  background: #0E1015;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--r-sm);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.65;
+  height: 250px;
+  overflow-y: auto;
+  padding: 0.75rem 1rem;
+}
+
+.log-entry {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 0.15rem;
+}
+
+.log-time {
+  color: var(--text-dim);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.log-entry.ok   .log-msg { color: var(--status-ok); }
+.log-entry.err  .log-msg { color: var(--status-err); }
+.log-entry.info .log-msg { color: #82B1FF; }
+.log-entry.warn .log-msg { color: var(--status-warn); }
+.log-entry.sys  .log-msg { color: var(--text-dim); }
+
+.log-stream::-webkit-scrollbar { width: 4px; }
+.log-stream::-webkit-scrollbar-thumb { background: #2A3040; border-radius: 2px; }
+
+/* ========================================================================
+   INVOICES LEDGER TABLE
+   ======================================================================== */
+.ledger-panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  margin-bottom: 2rem;
+  padding: 0.5rem;
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+.ledger-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+
+.ledger-table thead {
+  background: var(--panel-surface);
+}
+
+.ledger-table th {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--panel-border);
+  white-space: nowrap;
+}
+
+.ledger-table td {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: var(--text-main);
+  vertical-align: middle;
+}
+
+.ledger-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.ledger-table tbody tr:hover td {
+  background: #1F232D;
+}
+
+.td-mono {
+  font-family: var(--font-mono);
+}
+
+.badge-state {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.6rem;
+  border-radius: 2px;
+}
+.badge-state.paid    { background: var(--status-ok-bg);   color: var(--status-ok); }
+.badge-state.draft   { background: var(--status-warn-bg); color: var(--status-warn); }
+.badge-state.overdue { background: var(--status-err-bg);  color: var(--status-err); }
+
+/* ========================================================================
+   TOAST & EMPTY STATES
+   ======================================================================== */
+.toast-reservoir {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 360px;
+}
+
+.toast-pill {
+  background: #111318;
+  border: 1px solid var(--panel-border-hi);
+  border-left: 4px solid #82B1FF;
+  border-radius: var(--r-sm);
+  padding: 0.75rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #FFFFFF;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.toast-pill.ok   { border-left-color: var(--status-ok); }
+.toast-pill.err  { border-left-color: var(--status-err); }
+.toast-pill.warn { border-left-color: var(--status-warn); }
+
+.empty-view {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.spin-glyph {
+  display: inline-block;
+  animation: rotation 0.7s linear infinite;
+}
+
+@keyframes rotation {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+</style>
 </head>
 <body>
 
-<!-- ============================================================
-     TOP NAV
-     ============================================================ -->
-<nav class="top-nav">
-  <div class="nav-left">
-    <a class="brand" href="/">
-      <span class="brand-name">Billing Engine</span>
-      <span class="brand-tag">v1.0</span>
-    </a>
-    <span class="nav-divider"></span>
-    <div class="tenant-selector">
-      <span class="tenant-label">Tenant</span>
-      <select class="tenant-select" id="tenantSelect">
-        <option value="tenant_001">tenant_001</option>
-        <option value="tenant_002">tenant_002</option>
-        <option value="tenant_003">tenant_003</option>
-        <option value="tenant_custom">custom…</option>
-      </select>
-    </div>
-  </div>
-  <div class="nav-right">
-    <span id="navHealth" class="nav-btn" style="cursor:default; gap:0.4rem;">
-      <span class="status-dot" id="navStatusDot"></span>
-      <span id="navStatusText">connecting…</span>
-    </span>
-    <a href="/docs" target="_blank" class="nav-btn">API Docs ↗</a>
-    <button class="nav-btn" id="refreshBtn" title="Refresh metrics">⟳</button>
-    <button class="nav-btn" id="themeBtn" title="Toggle theme">
-      <span class="theme-icon-moon">☽</span>
-      <span class="theme-icon-sun">☀</span>
-    </button>
-    <button class="nav-btn primary" id="genInvoiceBtn">Generate Invoice</button>
-  </div>
-</nav>
+<main class="workbench">
 
-<!-- ============================================================
-     WORKSPACE
-     ============================================================ -->
-<main class="workspace">
+  <!-- MASTHEAD -->
+  <header class="masthead">
+    <div class="masthead-title-wrap">
+      <h1 class="masthead-title">Usage Metering &amp; Billing Engine</h1>
+      <div class="masthead-specs">Operator Console · v1.0.0 · Core Service · FastAPI + SQLite · Integer Micro-Cents</div>
+    </div>
 
-  <!-- HEALTH STATUS BAR -->
-  <div class="health-row" id="healthBar">
-    <div class="health-item">
-      <span class="health-label">API</span>
-      <span class="health-val" id="healthApiStatus">—</span>
-    </div>
-    <span class="health-sep"></span>
-    <div class="health-item">
-      <span class="health-label">DB</span>
-      <span class="health-val" id="healthDbStatus">—</span>
-    </div>
-    <span class="health-sep"></span>
-    <div class="health-item">
-      <span class="health-label">Tenant</span>
-      <span class="health-val cell-mono" id="healthTenant">—</span>
-    </div>
-    <span class="health-sep"></span>
-    <div class="health-item">
-      <span class="health-label">Tier</span>
-      <span id="healthTier">—</span>
-    </div>
-    <span class="health-sep"></span>
-    <div class="health-item">
-      <span class="health-label">Last refresh</span>
-      <span class="health-val cell-mono" id="healthTs">—</span>
-    </div>
-  </div>
-
-  <!-- METRIC CARDS -->
-  <div class="section-header">
-    <h2 class="section-title">Usage Summary</h2>
-    <span class="section-meta" id="metricPeriod">current billing period</span>
-  </div>
-
-  <div class="metrics-grid">
-    <div class="metric-card clay">
-      <div class="metric-badge">💰</div>
-      <div class="metric-label">Total Cost (USD)</div>
-      <div class="metric-value loading" id="metricCost">—</div>
-      <div class="metric-sub" id="metricCostMicro">— microcents</div>
-    </div>
-    <div class="metric-card amber">
-      <div class="metric-badge">🔢</div>
-      <div class="metric-label">Total Tokens</div>
-      <div class="metric-value loading" id="metricTokens">—</div>
-      <div class="metric-sub" id="metricEvents">— events</div>
-    </div>
-    <div class="metric-card green">
-      <div class="metric-badge">📊</div>
-      <div class="metric-label">Event Count</div>
-      <div class="metric-value loading" id="metricEventCount">—</div>
-      <div class="metric-sub">metered events recorded</div>
-    </div>
-    <div class="metric-card blue">
-      <div class="metric-badge">⚡</div>
-      <div class="metric-label">Avg Cost / Event</div>
-      <div class="metric-value loading" id="metricAvgCost">—</div>
-      <div class="metric-sub">cents per event</div>
-    </div>
-  </div>
-
-  <!-- SIMULATOR + CONSOLE -->
-  <div class="two-col">
-
-    <!-- EVENT SIMULATOR -->
-    <div>
-      <div class="section-header">
-        <h2 class="section-title">Event Simulator</h2>
-        <span class="section-meta">POST /api/v1/events</span>
+    <div class="masthead-actions">
+      <div class="tenant-picker">
+        <label for="tenantSelect" class="tenant-picker-label">Tenant</label>
+        <select class="tenant-picker-select" id="tenantSelect">
+          <option value="tenant_001">tenant_001</option>
+          <option value="tenant_002">tenant_002</option>
+          <option value="tenant_003">tenant_003</option>
+          <option value="tenant_custom">custom...</option>
+        </select>
       </div>
-      <div class="panel">
-        <div class="panel-head">
-          <span class="panel-title">🧪 Inject Metering Event</span>
-          <div style="display:flex;gap:0.5rem;">
-            <button class="btn btn-secondary" id="presetLlmBtn" style="font-size:0.72rem;padding:0.25rem 0.6rem;">LLM preset</button>
-            <button class="btn btn-secondary" id="presetApiBtn" style="font-size:0.72rem;padding:0.25rem 0.6rem;">API preset</button>
+
+      <button class="ctrl-btn" id="refreshBtn" type="button">Refresh Metrics</button>
+      <a href="/docs" target="_blank" class="ctrl-btn">API Specs</a>
+      <button class="ctrl-btn primary" id="genInvoiceBtn" type="button">Generate Invoice</button>
+    </div>
+  </header>
+
+  <!-- TELEMETRY STRIP -->
+  <section class="telemetry-strip" aria-label="System Vitals">
+    <div class="telemetry-cell">
+      <span class="telemetry-label">API Status</span>
+      <span class="telemetry-val" id="hApi">Polling...</span>
+    </div>
+    <div class="telemetry-cell">
+      <span class="telemetry-label">Database</span>
+      <span class="telemetry-val" id="hDb">Polling...</span>
+    </div>
+    <div class="telemetry-cell">
+      <span class="telemetry-label">Active Tenant</span>
+      <span class="telemetry-val td-mono" id="hTenant">tenant_001</span>
+    </div>
+    <div class="telemetry-cell">
+      <span class="telemetry-label">Plan Tier</span>
+      <span id="hTier"><span class="plan-chip starter">starter</span></span>
+    </div>
+    <div class="telemetry-cell">
+      <span class="telemetry-label">Last Polled</span>
+      <span class="telemetry-val td-mono" id="hTs">Live</span>
+    </div>
+  </section>
+
+  <!-- METRIC PANELS -->
+  <div class="section-meta-head">
+    <span class="section-label">Usage Summary (Current Period)</span>
+    <span class="masthead-specs" id="metricRouteLabel">Route: /api/v1/customers/{tenant_id}/usage</span>
+  </div>
+
+  <section class="metrics-grid" aria-label="Metrics Overview">
+    <div class="metric-panel">
+      <span class="metric-panel-tag">Total Cost (USD)</span>
+      <div class="metric-panel-num loading" id="mCost">Loading...</div>
+      <span class="metric-panel-sub" id="mCostMicro">0 micro-cents</span>
+    </div>
+
+    <div class="metric-panel">
+      <span class="metric-panel-tag">Total Tokens</span>
+      <div class="metric-panel-num loading" id="mTokens">Loading...</div>
+      <span class="metric-panel-sub" id="mEvents">0 events recorded</span>
+    </div>
+
+    <div class="metric-panel">
+      <span class="metric-panel-tag">Event Count</span>
+      <div class="metric-panel-num loading" id="mEventCount">Loading...</div>
+      <span class="metric-panel-sub">Metered requests recorded</span>
+    </div>
+
+    <div class="metric-panel">
+      <span class="metric-panel-tag">Avg Cost / Event</span>
+      <div class="metric-panel-num loading" id="mAvg">Loading...</div>
+      <span class="metric-panel-sub">Cents per billable event</span>
+    </div>
+  </section>
+
+  <!-- WORKBENCH 2-COL -->
+  <div class="workbench-cols">
+
+    <!-- SIMULATOR -->
+    <article class="terminal-card">
+      <div class="terminal-card-header">
+        <span class="terminal-card-title">Event Simulator</span>
+        <div class="preset-pill-group">
+          <button class="preset-pill" id="presetLlm" type="button">LLM Preset</button>
+          <button class="preset-pill" id="presetApi" type="button">API Preset</button>
+        </div>
+      </div>
+      <div class="terminal-card-body">
+        <form class="sim-form" id="simForm" autocomplete="off">
+          <div class="form-grid-2">
+            <div class="field-unit">
+              <label class="field-label" for="simCust">Customer ID</label>
+              <input class="field-input" type="text" id="simCust" value="tenant_001" required>
+            </div>
+            <div class="field-unit">
+              <label class="field-label" for="simType">Event Type</label>
+              <select class="field-select" id="simType">
+                <option value="llm_token_usage">llm_token_usage</option>
+                <option value="api_call">api_call</option>
+                <option value="storage_gb_hour">storage_gb_hour</option>
+                <option value="compute_minute">compute_minute</option>
+              </select>
+            </div>
           </div>
-        </div>
-        <div class="panel-body">
-          <form class="sim-form" id="simForm" autocomplete="off">
-            <div class="form-row">
-              <div class="form-group">
-                <label>Customer ID</label>
-                <input type="text" id="simCustomer" value="tenant_001" placeholder="tenant_xxx" required>
-              </div>
-              <div class="form-group">
-                <label>Event Type</label>
-                <select id="simEventType">
-                  <option value="llm_token_usage">llm_token_usage</option>
-                  <option value="api_call">api_call</option>
-                  <option value="storage_gb_hour">storage_gb_hour</option>
-                  <option value="compute_minute">compute_minute</option>
-                </select>
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Quantity</label>
-                <input type="number" id="simQuantity" value="1" min="1">
-              </div>
-              <div class="form-group">
-                <label>Input Tokens</label>
-                <input type="number" id="simInputTokens" value="1000" min="0">
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Output Tokens</label>
-                <input type="number" id="simOutputTokens" value="500" min="0">
-              </div>
-              <div class="form-group">
-                <label>Cached Tokens</label>
-                <input type="number" id="simCachedTokens" value="0" min="0">
-              </div>
-            </div>
-            <div class="btn-group">
-              <button type="submit" class="btn btn-primary" id="sendEventBtn">Send Event</button>
-              <button type="button" class="btn btn-secondary" id="clearSimBtn">Clear</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
 
-    <!-- CONSOLE -->
-    <div>
-      <div class="section-header">
-        <h2 class="section-title">Activity Console</h2>
-        <div style="display:flex;gap:0.5rem;align-items:center;">
-          <span class="section-meta" id="consoleCount">0 entries</span>
-          <button class="btn btn-secondary" id="clearConsoleBtn" style="font-size:0.72rem;padding:0.25rem 0.6rem;">Clear</button>
-        </div>
+          <div class="form-grid-2">
+            <div class="field-unit">
+              <label class="field-label" for="simQty">Quantity</label>
+              <input class="field-input" type="number" id="simQty" value="1" min="1">
+            </div>
+            <div class="field-unit">
+              <label class="field-label" for="simIn">Input Tokens</label>
+              <input class="field-input" type="number" id="simIn" value="1000" min="0">
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="field-unit">
+              <label class="field-label" for="simOut">Output Tokens</label>
+              <input class="field-input" type="number" id="simOut" value="500" min="0">
+            </div>
+            <div class="field-unit">
+              <label class="field-label" for="simCache">Cached Tokens</label>
+              <input class="field-input" type="number" id="simCache" value="0" min="0">
+            </div>
+          </div>
+
+          <div class="form-actions-row">
+            <button type="submit" class="ctrl-btn primary" id="sendBtn">Send Event</button>
+            <button type="button" class="ctrl-btn" id="clearSimBtn">Clear</button>
+          </div>
+        </form>
       </div>
-      <div class="panel" style="height:calc(100% - 2.5rem);">
-        <div class="panel-head">
-          <span class="panel-title">📡 Request / Response Log</span>
-          <span id="consoleLive" style="font-size:0.68rem;font-family:var(--font-mono);color:var(--accent-green);">● LIVE</span>
-        </div>
-        <div class="panel-body" style="padding:0.6rem;">
-          <div class="console-wrap" id="consoleWrap">
-            <div class="console-line sys"><span class="console-ts"></span><span class="console-msg">Console ready. Send an event or generate an invoice to begin.</span></div>
+    </article>
+
+    <!-- ACTIVITY CONSOLE -->
+    <article class="terminal-card">
+      <div class="terminal-card-header">
+        <span class="terminal-card-title">Activity Console</span>
+        <button class="preset-pill" id="clearConsole" type="button">Clear Console</button>
+      </div>
+      <div class="terminal-card-body" style="padding: 0.85rem;">
+        <div class="log-stream" id="consoleWrap" role="log" aria-live="polite">
+          <div class="log-entry sys">
+            <span class="log-time">00:00:00</span>
+            <span class="log-msg">Billing service console initialized. Ready for transactions.</span>
           </div>
         </div>
       </div>
-    </div>
+    </article>
 
   </div>
 
-  <!-- INVOICES -->
-  <div class="section-header">
-    <h2 class="section-title">Invoices</h2>
-    <div style="display:flex;gap:0.65rem;align-items:center;">
-      <span class="section-meta" id="invoiceCount">0 invoices</span>
-      <button class="btn btn-secondary" id="refreshInvoicesBtn" style="font-size:0.72rem;padding:0.25rem 0.6rem;">⟳ Refresh</button>
-    </div>
+  <!-- INVOICES LEDGER -->
+  <div class="section-meta-head">
+    <span class="section-label">Invoices Ledger</span>
+    <span class="masthead-specs" id="invoiceCount">0 recorded</span>
   </div>
 
-  <div class="panel">
-    <div class="table-wrap">
-      <table id="invoiceTable">
+  <section class="ledger-panel" aria-label="Invoices Ledger">
+    <div class="table-responsive">
+      <table class="ledger-table" id="invoiceTable">
         <thead>
           <tr>
-            <th>Invoice ID</th>
-            <th>Customer</th>
-            <th>Issued</th>
-            <th>Total (USD)</th>
-            <th>Tokens</th>
-            <th>Events</th>
-            <th>Status</th>
+            <th scope="col">Invoice ID</th>
+            <th scope="col">Customer</th>
+            <th scope="col">Issued Timestamp</th>
+            <th scope="col">Total USD</th>
+            <th scope="col">Tokens</th>
+            <th scope="col">Events</th>
+            <th scope="col">Status</th>
           </tr>
         </thead>
         <tbody id="invoiceBody">
-          <tr><td colspan="7"><div class="empty-state">No invoices yet — generate one above.</div></td></tr>
+          <tr>
+            <td colspan="7">
+              <div class="empty-view">No invoices generated yet for this tenant.</div>
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
-  </div>
+  </section>
 
 </main>
 
-<!-- Toast stack -->
-<div class="toast-stack" id="toastStack"></div>
+<div class="toast-reservoir" id="toastStack" aria-live="assertive"></div>
 
-<!-- ============================================================
-     JAVASCRIPT
-     ============================================================ -->
 <script>
-  /* ——— Theme toggle ——— */
-  const html = document.documentElement;
-  const themeBtn = document.getElementById('themeBtn');
-  themeBtn.addEventListener('click', () => {
-    html.dataset.theme = html.dataset.theme === 'dark' ? 'light' : 'dark';
-    localStorage.setItem('billing-theme', html.dataset.theme);
-  });
-  const savedTheme = localStorage.getItem('billing-theme');
-  if (savedTheme) html.dataset.theme = savedTheme;
+  const API = '';
+  let tenant = document.getElementById('tenantSelect').value;
 
-  /* ——— State ——— */
-  const API = '';  // same-origin
-  let currentTenant = document.getElementById('tenantSelect').value;
-  let consoleCount = 0;
-  const invoiceCache = new Map();
-
-  /* ——— Tenant select ——— */
-  document.getElementById('tenantSelect').addEventListener('change', e => {
-    let val = e.target.value;
+  /* Tenant Selector */
+  document.getElementById('tenantSelect').addEventListener('change', (e) => {
+    const val = e.target.value;
     if (val === 'tenant_custom') {
-      const custom = prompt('Enter tenant ID:');
-      if (custom) {
-        currentTenant = custom.trim();
-        document.getElementById('simCustomer').value = currentTenant;
-        logConsole('info', `Tenant switched to ${currentTenant}`);
-        refreshMetrics();
+      const customId = prompt('Enter custom tenant ID:');
+      if (customId && customId.trim()) {
+        tenant = customId.trim();
+        document.getElementById('simCust').value = tenant;
       }
     } else {
-      currentTenant = val;
-      document.getElementById('simCustomer').value = currentTenant;
-      logConsole('info', `Tenant switched to ${currentTenant}`);
-      refreshMetrics();
+      tenant = val;
+      document.getElementById('simCust').value = tenant;
     }
+    logEntry('info', `Active tenant set to ${tenant}`);
+    refreshMetrics();
+    loadInvoices();
   });
 
-  /* ——— Console ——— */
-  function logConsole(type, msg) {
+  /* Console Logging */
+  function logEntry(type, text) {
     const wrap = document.getElementById('consoleWrap');
-    const now = new Date().toLocaleTimeString('en-GB', { hour12: false });
-    const line = document.createElement('div');
-    line.className = `console-line ${type}`;
-    line.innerHTML = `<span class="console-ts">${now}</span><span class="console-msg">${escapeHtml(msg)}</span>`;
-    wrap.appendChild(line);
+    const timeStr = new Date().toLocaleTimeString('en-GB', { hour12: false });
+    const div = document.createElement('div');
+    div.className = `log-entry ${type}`;
+    div.innerHTML = `<span class="log-time">${timeStr}</span><span class="log-msg">${escapeHtml(text)}</span>`;
+    wrap.appendChild(div);
     wrap.scrollTop = wrap.scrollHeight;
-    consoleCount++;
-    document.getElementById('consoleCount').textContent = `${consoleCount} entries`;
   }
 
   function escapeHtml(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
-  document.getElementById('clearConsoleBtn').addEventListener('click', () => {
-    document.getElementById('consoleWrap').innerHTML = '<div class="console-line sys"><span class="console-ts"></span><span class="console-msg">Console cleared.</span></div>';
-    consoleCount = 0;
-    document.getElementById('consoleCount').textContent = '0 entries';
+  document.getElementById('clearConsole').addEventListener('click', () => {
+    document.getElementById('consoleWrap').innerHTML = `
+      <div class="log-entry sys">
+        <span class="log-time">${new Date().toLocaleTimeString('en-GB', { hour12: false })}</span>
+        <span class="log-msg">Console cleared.</span>
+      </div>`;
   });
 
-  /* ——— Toast ——— */
-  function toast(msg, type = 'info') {
-    const stack = document.getElementById('toastStack');
-    const el = document.createElement('div');
-    el.className = `toast ${type}`;
-    el.textContent = msg;
-    stack.appendChild(el);
-    setTimeout(() => el.remove(), 4000);
+  /* Toast Notification */
+  function showToast(msg, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast-pill ${type}`;
+    toast.textContent = msg;
+    document.getElementById('toastStack').appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
   }
 
-  /* ——— Health check ——— */
+  /* Health Status Check */
   async function checkHealth() {
-    const dot = document.getElementById('navStatusDot');
-    const txt = document.getElementById('navStatusText');
-    const api = document.getElementById('healthApiStatus');
-    const db  = document.getElementById('healthDbStatus');
+    const hApi = document.getElementById('hApi');
+    const hDb  = document.getElementById('hDb');
     try {
-      const r = await fetch(`${API}/health`);
-      const data = await r.json();
-      const ok = data.status === 'healthy';
-      dot.style.background = ok ? 'var(--accent-green)' : 'var(--accent-red)';
-      txt.textContent = ok ? 'healthy' : 'degraded';
-      api.textContent = ok ? 'ok' : 'error';
-      api.className = `health-val ${ok ? 'ok' : 'err'}`;
-      db.textContent = data.database || 'ok';
-      db.className   = `health-val ok`;
-    } catch(e) {
-      dot.style.background = 'var(--accent-red)';
-      txt.textContent = 'offline';
-      api.textContent = 'unreachable'; api.className = 'health-val err';
+      const res = await fetch(`${API}/health`);
+      const data = await res.json();
+      const isHealthy = data.status === 'healthy';
+      hApi.textContent = isHealthy ? 'OK (Healthy)' : 'DEGRADED';
+      hApi.className   = `telemetry-val ${isHealthy ? 'ok' : 'err'}`;
+      hDb.textContent  = data.database ? String(data.database).toUpperCase() : 'CONNECTED';
+      hDb.className    = 'telemetry-val ok';
+    } catch (e) {
+      hApi.textContent = 'UNREACHABLE';
+      hApi.className   = 'telemetry-val err';
+      hDb.textContent  = 'UNKNOWN';
     }
   }
 
-  /* ——— Metrics ——— */
+  /* Metrics Refresh */
   async function refreshMetrics() {
-    const btn = document.getElementById('refreshBtn');
-    btn.classList.add('refresh-spin');
-    document.getElementById('healthTenant').textContent = currentTenant;
-    document.getElementById('healthTs').textContent = new Date().toLocaleTimeString();
+    document.getElementById('hTenant').textContent = tenant;
+    document.getElementById('hTs').textContent = new Date().toLocaleTimeString('en-GB', { hour12: false });
 
-    // Reset to loading
-    ['metricCost','metricTokens','metricEventCount','metricAvgCost'].forEach(id => {
+    ['mCost', 'mTokens', 'mEventCount', 'mAvg'].forEach((id) => {
       const el = document.getElementById(id);
-      el.className = 'metric-value loading';
-      el.innerHTML = '<span class="spinner"></span>';
+      el.className = 'metric-panel-num loading';
+      el.textContent = 'Updating...';
     });
 
     try {
-      const r = await fetch(`${API}/api/v1/customers/${currentTenant}/usage`);
-      if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
-      const d = await r.json();
+      const res = await fetch(`${API}/api/v1/customers/${encodeURIComponent(tenant)}/usage`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const d = await res.json();
 
-      const costCents = (d.total_cost_cents || 0);
-      const costUSD   = (costCents / 100).toFixed(4);
-      const tokens    = (d.total_tokens || 0).toLocaleString();
-      const events    = (d.event_count || 0);
-      const avgCents  = events > 0 ? (costCents / events).toFixed(3) : '0.000';
+      const cents = d.total_cost_cents || 0;
+      const usdFormatted = (cents / 100).toFixed(4);
+      const tokens = d.total_tokens || 0;
+      const events = d.event_count || 0;
+      const avgCost = events > 0 ? (cents / events).toFixed(3) : '0.000';
 
-      setMetric('metricCost', `$${costUSD}`);
-      document.getElementById('metricCostMicro').textContent = `${(d.total_cost_microcents||0).toLocaleString()} microcents`;
+      setMetricText('mCost', `$${usdFormatted}`);
+      document.getElementById('mCostMicro').textContent = `${(d.total_cost_microcents || 0).toLocaleString()} micro-cents`;
 
-      setMetric('metricTokens', tokens);
-      document.getElementById('metricEvents').textContent = `${events} events`;
+      setMetricText('mTokens', Number(tokens).toLocaleString());
+      document.getElementById('mEvents').textContent = `${events} events recorded`;
 
-      setMetric('metricEventCount', events.toLocaleString());
-      setMetric('metricAvgCost', avgCents);
+      setMetricText('mEventCount', Number(events).toLocaleString());
+      setMetricText('mAvg', `${avgCost}¢`);
 
-      // Tier
-      const tier = (d.tier || 'starter').toLowerCase();
-      document.getElementById('healthTier').innerHTML = `<span class="tier-chip ${tier}">${tier}</span>`;
+      const rawTier = (d.tier || 'starter').toLowerCase();
+      const tierMap = { starter: 'starter', growth: 'growth', scale: 'scale', enterprise: 'enterprise' };
+      const resolvedClass = tierMap[rawTier] || 'starter';
+      document.getElementById('hTier').innerHTML = `<span class="plan-chip ${resolvedClass}">${escapeHtml(rawTier)}</span>`;
 
-      logConsole('ok', `Metrics refreshed for ${currentTenant} — $${costUSD} · ${tokens} tokens · ${events} events`);
-    } catch(e) {
-      ['metricCost','metricTokens','metricEventCount','metricAvgCost'].forEach(id => {
-        setMetric(id, 'err');
-      });
-      logConsole('err', `Metrics fetch failed: ${e.message}`);
-      toast(`Failed to load metrics: ${e.message}`, 'err');
-    } finally {
-      btn.classList.remove('refresh-spin');
+      logEntry('ok', `Metrics polled: $${usdFormatted} | ${Number(tokens).toLocaleString()} tokens | ${events} events`);
+    } catch (e) {
+      ['mCost', 'mTokens', 'mEventCount', 'mAvg'].forEach((id) => setMetricText(id, 'ERR'));
+      logEntry('err', `Metrics fetch error: ${e.message}`);
+      showToast(`Metrics error: ${e.message}`, 'err');
     }
   }
 
-  function setMetric(id, val) {
+  function setMetricText(id, val) {
     const el = document.getElementById(id);
-    el.className = 'metric-value';
+    el.className = 'metric-panel-num';
     el.textContent = val;
   }
 
@@ -1077,171 +942,165 @@
     refreshMetrics();
   });
 
-  /* ——— Presets ——— */
-  document.getElementById('presetLlmBtn').addEventListener('click', () => {
-    document.getElementById('simEventType').value = 'llm_token_usage';
-    document.getElementById('simQuantity').value  = '1';
-    document.getElementById('simInputTokens').value  = '2048';
-    document.getElementById('simOutputTokens').value = '512';
-    document.getElementById('simCachedTokens').value = '256';
+  /* Presets */
+  document.getElementById('presetLlm').addEventListener('click', () => {
+    document.getElementById('simType').value = 'llm_token_usage';
+    document.getElementById('simQty').value  = '1';
+    document.getElementById('simIn').value   = '2048';
+    document.getElementById('simOut').value  = '512';
+    document.getElementById('simCache').value= '256';
   });
 
-  document.getElementById('presetApiBtn').addEventListener('click', () => {
-    document.getElementById('simEventType').value = 'api_call';
-    document.getElementById('simQuantity').value  = '100';
-    document.getElementById('simInputTokens').value  = '0';
-    document.getElementById('simOutputTokens').value = '0';
-    document.getElementById('simCachedTokens').value = '0';
+  document.getElementById('presetApi').addEventListener('click', () => {
+    document.getElementById('simType').value = 'api_call';
+    document.getElementById('simQty').value  = '100';
+    document.getElementById('simIn').value   = '0';
+    document.getElementById('simOut').value  = '0';
+    document.getElementById('simCache').value= '0';
   });
 
   document.getElementById('clearSimBtn').addEventListener('click', () => {
     document.getElementById('simForm').reset();
-    document.getElementById('simCustomer').value = currentTenant;
+    document.getElementById('simCust').value = tenant;
   });
 
-  /* ——— Send event ——— */
-  document.getElementById('simForm').addEventListener('submit', async e => {
+  /* Inject Event */
+  document.getElementById('simForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const btn = document.getElementById('sendEventBtn');
+    const btn = document.getElementById('sendBtn');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Sending…';
+    btn.textContent = 'Posting...';
 
     const payload = {
-      customer_id:    document.getElementById('simCustomer').value.trim(),
-      event_type:     document.getElementById('simEventType').value,
-      quantity:       parseInt(document.getElementById('simQuantity').value) || 1,
-      input_tokens:   parseInt(document.getElementById('simInputTokens').value)  || 0,
-      output_tokens:  parseInt(document.getElementById('simOutputTokens').value) || 0,
-      cached_tokens:  parseInt(document.getElementById('simCachedTokens').value) || 0,
+      customer_id:   document.getElementById('simCust').value.trim(),
+      event_type:    document.getElementById('simType').value,
+      quantity:      parseInt(document.getElementById('simQty').value, 10) || 1,
+      input_tokens:  parseInt(document.getElementById('simIn').value, 10) || 0,
+      output_tokens: parseInt(document.getElementById('simOut').value, 10) || 0,
+      cached_tokens: parseInt(document.getElementById('simCache').value, 10) || 0,
     };
 
-    logConsole('info', `POST /api/v1/events — ${JSON.stringify(payload)}`);
+    logEntry('info', `POST /api/v1/events Payload: ${JSON.stringify(payload)}`);
 
     try {
-      const r = await fetch(`${API}/api/v1/events`, {
+      const res = await fetch(`${API}/api/v1/events`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.detail || JSON.stringify(data));
-      logConsole('ok', `✓ Event recorded — id: ${data.id || data.event_id || '?'}, cost: ${data.cost_cents ?? data.total_cost_cents ?? '?'}¢`);
-      toast('Event recorded successfully', 'ok');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || JSON.stringify(data));
+      logEntry('ok', `Event verified: ID ${data.id || data.event_id || 'OK'} | Cost: ${data.cost_cents ?? data.total_cost_cents ?? 0}¢`);
+      showToast('Event metered successfully', 'ok');
       setTimeout(refreshMetrics, 300);
-    } catch(err) {
-      logConsole('err', `✗ Event failed — ${err.message}`);
-      toast(`Event failed: ${err.message}`, 'err');
+    } catch (err) {
+      logEntry('err', `Event ingestion failed: ${err.message}`);
+      showToast(`Event failed: ${err.message}`, 'err');
     } finally {
       btn.disabled = false;
       btn.textContent = 'Send Event';
     }
   });
 
-  /* ——— Generate Invoice ——— */
-  async function generateInvoice() {
+  /* Generate Invoice */
+  document.getElementById('genInvoiceBtn').addEventListener('click', async () => {
     const btn = document.getElementById('genInvoiceBtn');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>';
+    btn.textContent = 'Generating...';
 
-    logConsole('info', `POST /api/v1/invoices — customer: ${currentTenant}`);
+    logEntry('info', `POST /api/v1/invoices for customer ${tenant}`);
 
     try {
-      const r = await fetch(`${API}/api/v1/invoices`, {
+      const res = await fetch(`${API}/api/v1/invoices`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customer_id: currentTenant }),
+        body: JSON.stringify({ customer_id: tenant }),
       });
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.detail || JSON.stringify(data));
-      logConsole('ok', `✓ Invoice generated — id: ${data.invoice_id || data.id}, amount: ${data.total_amount_cents ?? data.total_cost_cents ?? '?'}¢`);
-      toast(`Invoice created for ${currentTenant}`, 'ok');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || JSON.stringify(data));
+      logEntry('ok', `Invoice created: ID ${data.invoice_id || data.id} | Amount: ${data.total_amount_cents ?? data.total_cost_cents ?? 0}¢`);
+      showToast('Invoice generated successfully', 'ok');
       await loadInvoices();
-    } catch(err) {
-      logConsole('err', `✗ Invoice failed — ${err.message}`);
-      toast(`Invoice failed: ${err.message}`, 'err');
+    } catch (err) {
+      logEntry('err', `Invoice generation failed: ${err.message}`);
+      showToast(`Invoice error: ${err.message}`, 'err');
     } finally {
       btn.disabled = false;
       btn.textContent = 'Generate Invoice';
     }
-  }
+  });
 
-  document.getElementById('genInvoiceBtn').addEventListener('click', generateInvoice);
-
-  /* ——— Load invoices ——— */
+  /* Invoices List */
   async function loadInvoices() {
     const tbody = document.getElementById('invoiceBody');
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><span class="spinner"></span> Loading invoices…</div></td></tr>`;
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-view">Querying invoice records...</div></td></tr>';
 
-    // Try to fetch invoices — the endpoint may vary, we'll try a few patterns
-    const endpoints = [
-      `/api/v1/customers/${currentTenant}/invoices`,
-      `/api/v1/invoices?customer_id=${currentTenant}`,
+    const candidateEndpoints = [
+      `/api/v1/customers/${encodeURIComponent(tenant)}/invoices`,
+      `/api/v1/invoices?customer_id=${encodeURIComponent(tenant)}`,
       `/api/v1/invoices`,
     ];
 
-    let invoices = null;
-    for (const ep of endpoints) {
+    let records = null;
+    for (const ep of candidateEndpoints) {
       try {
-        const r = await fetch(`${API}${ep}`);
-        if (r.ok) {
-          const d = await r.json();
-          invoices = Array.isArray(d) ? d : (d.invoices || d.items || []);
-          if (invoices.length !== undefined) break;
+        const res = await fetch(`${API}${ep}`);
+        if (res.ok) {
+          const d = await res.json();
+          records = Array.isArray(d) ? d : (d.invoices || d.items || []);
+          break;
         }
-      } catch(_) {}
+      } catch (_) {}
     }
 
-    if (invoices === null) {
-      tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">Could not load invoice list (endpoint not available).</div></td></tr>`;
+    if (records === null) {
+      tbody.innerHTML = '<tr><td colspan="7"><div class="empty-view">Invoice listing route not exposed on this server.</div></td></tr>';
       return;
     }
 
-    if (!invoices.length) {
-      tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">No invoices yet — generate one above.</div></td></tr>`;
-      document.getElementById('invoiceCount').textContent = '0 invoices';
+    if (!records.length) {
+      tbody.innerHTML = '<tr><td colspan="7"><div class="empty-view">No invoices generated yet for this tenant.</div></td></tr>';
+      document.getElementById('invoiceCount').textContent = '0 recorded';
       return;
     }
 
-    document.getElementById('invoiceCount').textContent = `${invoices.length} invoice${invoices.length !== 1 ? 's' : ''}`;
+    document.getElementById('invoiceCount').textContent = `${records.length} recorded`;
     tbody.innerHTML = '';
 
-    invoices.slice().reverse().forEach(inv => {
-      const id      = inv.invoice_id || inv.id || '—';
-      const cust    = inv.customer_id || inv.tenant_id || '—';
-      const issued  = inv.created_at ? new Date(inv.created_at).toLocaleString() : '—';
-      const cents   = inv.total_amount_cents ?? inv.total_cost_cents ?? 0;
-      const usd     = (cents / 100).toFixed(4);
-      const tokens  = (inv.total_tokens || 0).toLocaleString();
-      const events  = (inv.event_count || 0).toLocaleString();
-      const status  = (inv.status || 'draft').toLowerCase();
-      const badgeCls = status === 'paid' ? 'badge-paid' : status === 'overdue' ? 'badge-overdue' : 'badge-draft';
+    records.slice().reverse().forEach((inv) => {
+      const invId    = inv.invoice_id || inv.id || 'N/A';
+      const cust     = inv.customer_id || inv.tenant_id || tenant;
+      const created  = inv.created_at ? new Date(inv.created_at).toLocaleString() : 'N/A';
+      const cents    = inv.total_amount_cents ?? inv.total_cost_cents ?? 0;
+      const usdStr   = (cents / 100).toFixed(4);
+      const tokens   = (inv.total_tokens || 0).toLocaleString();
+      const events   = (inv.event_count || 0).toLocaleString();
+      const status   = (inv.status || 'draft').toLowerCase();
+      const badgeCls = status === 'paid' ? 'paid' : (status === 'overdue' ? 'overdue' : 'draft');
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td class="cell-mono" style="font-size:0.68rem;color:var(--text-subtle);">${escapeHtml(id)}</td>
-        <td class="cell-mono">${escapeHtml(cust)}</td>
-        <td style="color:var(--text-subtle);font-size:0.75rem;">${issued}</td>
-        <td class="cell-mono" style="font-weight:600;">$${usd}</td>
-        <td class="cell-mono" style="color:var(--text-subtle);">${tokens}</td>
-        <td class="cell-mono" style="color:var(--text-subtle);">${events}</td>
-        <td><span class="badge ${badgeCls}">${status}</span></td>
+        <td class="td-mono" style="color:var(--text-dim);">${escapeHtml(invId)}</td>
+        <td class="td-mono">${escapeHtml(cust)}</td>
+        <td style="color:var(--text-muted);">${created}</td>
+        <td class="td-mono" style="font-weight:700; color:var(--text-pure);">$${usdStr}</td>
+        <td class="td-mono" style="color:var(--text-muted);">${tokens}</td>
+        <td class="td-mono" style="color:var(--text-muted);">${events}</td>
+        <td><span class="badge-state ${badgeCls}">${status}</span></td>
       `;
       tbody.appendChild(tr);
     });
   }
 
-  document.getElementById('refreshInvoicesBtn').addEventListener('click', loadInvoices);
-
-  /* ——— INIT ——— */
-  (async function init() {
+  /* Initialization */
+  (async function boot() {
     await checkHealth();
     await refreshMetrics();
     await loadInvoices();
-    // Auto-refresh every 60s
     setInterval(() => {
       checkHealth();
       refreshMetrics();
-    }, 60_000);
+    }, 60000);
   })();
 </script>
 
