@@ -3,7 +3,7 @@ import threading
 import time
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
-from app.models.entities import Tenant, Subscription, ProcessedWebhook
+from app.models.entities import Subscription
 
 class BackgroundWorker:
     def __init__(self, interval_seconds: int = 60):

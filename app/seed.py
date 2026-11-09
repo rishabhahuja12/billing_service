@@ -1,8 +1,7 @@
 """Database seeding script for clean demonstration and evaluation."""
-import uuid
 from datetime import datetime, timezone, timedelta
 from app.database import SessionLocal, Base, engine
-from app.models.entities import Tenant, Plan, Subscription, UsageEvent
+from app.models.entities import Tenant, Subscription
 from app.main import init_default_plans
 
 def seed_database():

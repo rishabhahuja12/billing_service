@@ -3,11 +3,11 @@ import json
 import uuid
 from typing import Optional
 from datetime import datetime, timezone, timedelta
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, BackgroundTasks
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.config import settings
-from app.models.entities import Tenant, Plan, Subscription, UsageEvent
+from app.models.entities import Tenant, Plan, Subscription
 from app.models.schemas import (
     TenantCreate, TenantResponse,
     UsageEventIngest, UsageEventResponse,

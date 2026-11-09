@@ -5,8 +5,7 @@ import time
 from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from app.config import settings
-from app.models.entities import Tenant, Plan, Subscription, ProcessedWebhook
+from app.models.entities import Tenant, Subscription, ProcessedWebhook
 
 class StripeSyncService:
     @staticmethod

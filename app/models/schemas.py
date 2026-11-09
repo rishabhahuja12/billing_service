@@ -1,5 +1,5 @@
 """Pydantic schemas for request validation, boundary checks, and API responses."""
-from typing import Optional, Dict, Any, List
+from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
 

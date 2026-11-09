@@ -1,5 +1,4 @@
 """Usage metering service with atomic idempotency handling."""
-import json
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
