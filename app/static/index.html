@@ -1,636 +1,1249 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Usage Metering & Billing Engine | Dashboard</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <title>Billing Engine — Metering Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,500;0,600;1,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
+    /* ========================================================================
+       DESIGN TOKENS — Warm editorial palette (from study_tracker & turnitout)
+       ======================================================================== */
     :root {
-      --bg: #090d16;
-      --card-bg: rgba(18, 24, 38, 0.75);
-      --card-border: rgba(255, 255, 255, 0.08);
-      --card-hover: rgba(255, 255, 255, 0.12);
-      --primary: #6366f1;
-      --primary-glow: rgba(99, 102, 241, 0.35);
-      --accent: #06b6d4;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --text-dim: #64748b;
+      --bg-canvas:        #FAF8F5;
+      --bg-surface:       #FFFFFF;
+      --bg-surface-alt:   #F5F2ED;
+      --text-main:        #2C2C2C;
+      --text-subtle:      #6B6B6B;
+      --text-faint:       #9E9E9E;
+      --border:           #E8E6E1;
+      --border-strong:    #D5D2CC;
+
+      --accent-clay:      #CC785C;        /* primary action */
+      --accent-clay-bg:   rgba(204,120,92,0.08);
+      --accent-amber:     #E29547;        /* warning / highlight */
+      --accent-amber-bg:  #FDF6EE;
+      --accent-green:     #2E7D32;        /* success */
+      --accent-green-bg:  #E8F5E9;
+      --accent-red:       #C62828;        /* danger */
+      --accent-red-bg:    #FFEBEE;
+      --accent-blue:      #1565C0;        /* info / link */
+      --accent-blue-bg:   #E3F2FD;
+
+      --font-serif:  'Lora', Georgia, serif;
+      --font-sans:   'Inter', system-ui, -apple-system, sans-serif;
+      --font-mono:   'JetBrains Mono', 'Courier New', monospace;
+
+      --radius-sm:   4px;
+      --radius:      8px;
+      --radius-lg:   12px;
+      --shadow-xs:   0 1px 3px rgba(0,0,0,0.04);
+      --shadow-sm:   0 2px 8px rgba(0,0,0,0.06);
+      --shadow-md:   0 4px 16px rgba(0,0,0,0.08);
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+    [data-theme="dark"] {
+      --bg-canvas:        #1A1A1A;
+      --bg-surface:       #242424;
+      --bg-surface-alt:   #2E2E2E;
+      --text-main:        #E0DEDA;
+      --text-subtle:      #9E9E9E;
+      --text-faint:       #6B6B6B;
+      --border:           #333333;
+      --border-strong:    #444444;
+      --accent-clay-bg:   rgba(204,120,92,0.14);
+      --accent-amber-bg:  #2C241B;
+      --accent-green-bg:  #1B2E1C;
+      --accent-red-bg:    #2C1B1B;
+      --accent-blue-bg:   #0D1E35;
     }
+
+    /* ========================================================================
+       RESET & BASE
+       ======================================================================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
-                  radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.12) 0%, transparent 40%),
-                  var(--bg);
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+      font-family: var(--font-sans);
+      background: var(--bg-canvas);
+      color: var(--text-main);
+      font-size: 14px;
+      line-height: 1.55;
+      transition: background 0.2s, color 0.2s;
       overflow-x: hidden;
     }
 
-    /* Navigation */
-    header {
-      padding: 18px 36px;
+    /* ========================================================================
+       TOP NAV
+       ======================================================================== */
+    .top-nav {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.5rem;
+      height: 52px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid var(--card-border);
-      backdrop-filter: blur(12px);
-      background: rgba(9, 13, 22, 0.65);
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      box-shadow: var(--shadow-xs);
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
     }
 
     .brand {
       display: flex;
-      align-items: center;
-      gap: 12px;
+      align-items: baseline;
+      gap: 0.5rem;
       text-decoration: none;
-      color: var(--text);
+      color: inherit;
     }
 
-    .brand-logo {
-      width: 38px;
-      height: 38px;
-      background: linear-gradient(135deg, var(--primary), var(--accent));
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      font-size: 19px;
-      box-shadow: 0 0 16px var(--primary-glow);
-    }
-
-    .brand-title {
-      font-weight: 700;
-      font-size: 18px;
-      letter-spacing: -0.02em;
-    }
-
-    .status-badge {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 14px;
-      background: rgba(16, 185, 129, 0.12);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      border-radius: 999px;
-      font-size: 13px;
+    .brand-name {
+      font-family: var(--font-serif);
       font-weight: 600;
-      color: var(--success);
+      font-size: 1.1rem;
+      color: var(--text-main);
+      letter-spacing: -0.015em;
     }
 
-    .pulse {
-      width: 8px;
-      height: 8px;
-      background: var(--success);
-      border-radius: 50%;
-      box-shadow: 0 0 10px var(--success);
-      animation: pulse 2s infinite;
+    .brand-tag {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--accent-clay);
+      font-weight: 600;
+      background: var(--accent-clay-bg);
+      padding: 0.12rem 0.45rem;
+      border-radius: var(--radius-sm);
+      letter-spacing: 0.04em;
     }
 
-    @keyframes pulse {
-      0% { transform: scale(0.95); opacity: 0.8; }
-      50% { transform: scale(1.3); opacity: 1; }
-      100% { transform: scale(0.95); opacity: 0.8; }
+    .nav-divider {
+      width: 1px;
+      height: 20px;
+      background: var(--border);
     }
 
-    /* Main Container */
-    main {
-      flex: 1;
-      max-width: 1400px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 32px 28px;
-      display: flex;
-      flex-direction: column;
-      gap: 28px;
-    }
-
-    /* Tenant Selector Bar */
-    .tenant-bar {
+    .tenant-selector {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 16px 24px;
-      backdrop-filter: blur(16px);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      gap: 0.5rem;
+      font-size: 0.8rem;
     }
 
-    .tenant-input-group {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex: 1;
-      max-width: 480px;
+    .tenant-label {
+      color: var(--text-subtle);
+      font-weight: 500;
     }
 
-    .tenant-input-group label {
-      font-size: 14px;
+    .tenant-select {
+      border: 1px solid var(--border);
+      background: var(--bg-surface);
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
       font-weight: 600;
-      color: var(--text-muted);
-      white-space: nowrap;
-    }
-
-    input, select, textarea {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--card-border);
-      border-radius: 10px;
-      padding: 10px 14px;
-      color: var(--text);
-      font-family: inherit;
-      font-size: 14px;
-      outline: none;
-      transition: all 0.2s ease;
-      width: 100%;
-    }
-
-    input:focus, select:focus, textarea:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 12px var(--primary-glow);
-      background: rgba(255, 255, 255, 0.08);
-    }
-
-    .btn {
-      background: linear-gradient(135deg, var(--primary), #4f46e5);
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      padding: 10px 18px;
-      font-size: 14px;
-      font-weight: 600;
+      padding: 0.28rem 0.65rem;
+      border-radius: var(--radius-sm);
       cursor: pointer;
-      transition: all 0.2s ease;
-      display: inline-flex;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .tenant-select:focus { border-color: var(--accent-clay); }
+
+    .nav-right {
+      display: flex;
       align-items: center;
-      gap: 8px;
-      box-shadow: 0 4px 16px var(--primary-glow);
-      white-space: nowrap;
+      gap: 0.65rem;
     }
 
-    .btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+    .nav-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-subtle);
+      padding: 0.3rem 0.65rem;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-sans);
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
     }
 
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.07);
-      box-shadow: none;
-      border: 1px solid var(--card-border);
+    .nav-btn:hover {
+      border-color: var(--border-strong);
+      color: var(--text-main);
     }
 
-    .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.12);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    .nav-btn.primary {
+      background: var(--text-main);
+      border-color: var(--text-main);
+      color: var(--bg-canvas);
     }
 
-    /* Metric Grid */
-    .metric-grid {
+    .nav-btn.primary:hover {
+      background: var(--accent-clay);
+      border-color: var(--accent-clay);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    /* ========================================================================
+       MAIN LAYOUT
+       ======================================================================== */
+    .workspace {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 1.5rem clamp(1rem, 2.5vw, 2rem);
+    }
+
+    /* ========================================================================
+       SECTION HEADERS
+       ======================================================================== */
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 0.85rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .section-title {
+      font-family: var(--font-serif);
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .section-title::before {
+      content: '';
+      display: inline-block;
+      width: 3px;
+      height: 14px;
+      background: var(--accent-clay);
+      border-radius: 2px;
+    }
+
+    .section-meta {
+      font-size: 0.72rem;
+      color: var(--text-faint);
+      font-family: var(--font-mono);
+    }
+
+    /* ========================================================================
+       METRIC CARDS
+       ======================================================================== */
+    .metrics-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+      gap: 0.85rem;
+      margin-bottom: 1.75rem;
     }
 
     .metric-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 22px;
-      backdrop-filter: blur(16px);
-      transition: transform 0.2s ease, border-color 0.2s ease;
-    }
-
-    .metric-card:hover {
-      transform: translateY(-2px);
-      border-color: var(--card-hover);
-    }
-
-    .metric-label {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 8px;
-    }
-
-    .metric-value {
-      font-size: 28px;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-    }
-
-    .metric-sub {
-      font-size: 12px;
-      color: var(--text-dim);
-      margin-top: 6px;
-    }
-
-    /* Progress bar */
-    .quota-progress {
-      width: 100%;
-      height: 7px;
-      background: rgba(255, 255, 255, 0.08);
-      border-radius: 99px;
-      margin-top: 10px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.1rem 1.25rem;
+      position: relative;
+      transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+      cursor: default;
       overflow: hidden;
     }
 
-    .quota-bar {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, var(--accent), var(--primary));
-      border-radius: 99px;
-      transition: width 0.4s ease;
+    .metric-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--accent-color, var(--border));
+      border-radius: var(--radius) var(--radius) 0 0;
     }
 
-    /* Action Grid */
-    .dashboard-grid {
+    .metric-card:hover {
+      border-color: var(--border-strong);
+      box-shadow: var(--shadow-sm);
+      transform: translateY(-1px);
+    }
+
+    .metric-card.clay  { --accent-color: var(--accent-clay); }
+    .metric-card.amber { --accent-color: var(--accent-amber); }
+    .metric-card.green { --accent-color: var(--accent-green); }
+    .metric-card.blue  { --accent-color: var(--accent-blue); }
+
+    .metric-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-faint);
+      margin-bottom: 0.5rem;
+    }
+
+    .metric-value {
+      font-family: var(--font-mono);
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: var(--text-main);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+
+    .metric-value.loading {
+      color: var(--border-strong);
+    }
+
+    .metric-sub {
+      font-size: 0.72rem;
+      color: var(--text-subtle);
+      margin-top: 0.4rem;
+      font-family: var(--font-mono);
+    }
+
+    .metric-badge {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      font-size: 1.1rem;
+      opacity: 0.5;
+    }
+
+    /* ========================================================================
+       TWO-COLUMN GRID
+       ======================================================================== */
+    .two-col {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 24px;
+      gap: 1.25rem;
+      margin-bottom: 1.75rem;
     }
 
-    @media (max-width: 1024px) {
-      .dashboard-grid {
-        grid-template-columns: 1fr;
-      }
+    @media (max-width: 860px) {
+      .two-col { grid-template-columns: 1fr; }
     }
 
+    /* ========================================================================
+       PANEL (generic surface)
+       ======================================================================== */
     .panel {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 24px;
-      backdrop-filter: blur(16px);
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
     }
 
-    .panel-header {
+    .panel-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      padding-bottom: 14px;
+      padding: 0.85rem 1.1rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-surface-alt);
     }
 
     .panel-title {
-      font-size: 17px;
-      font-weight: 700;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-main);
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 0.4rem;
     }
 
-    .form-group {
+    .panel-body { padding: 1.1rem; }
+
+    /* ========================================================================
+       TIER BADGE
+       ======================================================================== */
+    .tier-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .tier-chip.starter  { background: var(--accent-blue-bg);  color: var(--accent-blue); }
+    .tier-chip.growth   { background: var(--accent-green-bg); color: var(--accent-green); }
+    .tier-chip.scale    { background: var(--accent-amber-bg); color: var(--accent-amber); }
+    .tier-chip.enterprise { background: var(--accent-clay-bg); color: var(--accent-clay); }
+
+    /* ========================================================================
+       EVENT SIMULATOR FORM
+       ======================================================================== */
+    .sim-form {
       display: flex;
       flex-direction: column;
-      gap: 6px;
-    }
-
-    .form-group label {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-muted);
+      gap: 0.65rem;
     }
 
     .form-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: 0.65rem;
     }
 
-    /* Terminal Console */
-    .console-box {
-      background: #050811;
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 12px;
-      padding: 16px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12.5px;
-      color: #38bdf8;
-      max-height: 280px;
+    .form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+
+    .form-group label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-subtle);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .form-group input, .form-group select {
+      background: var(--bg-canvas);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      padding: 0.42rem 0.7rem;
+      outline: none;
+      transition: border-color 0.15s;
+      width: 100%;
+    }
+
+    .form-group input:focus, .form-group select:focus {
+      border-color: var(--accent-clay);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-sans);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--text-main);
+      color: var(--bg-canvas);
+      border-color: var(--text-main);
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-clay);
+      border-color: var(--accent-clay);
+    }
+
+    .btn-secondary {
+      background: var(--bg-canvas);
+      color: var(--text-main);
+      border-color: var(--border);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--border-strong);
+    }
+
+    .btn-danger {
+      background: var(--accent-red-bg);
+      color: var(--accent-red);
+      border-color: rgba(198,40,40,0.25);
+    }
+
+    .btn-danger:hover {
+      background: var(--accent-red);
+      color: #fff;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.35rem;
+    }
+
+    /* ========================================================================
+       CONSOLE LOG
+       ======================================================================== */
+    .console-wrap {
+      background: #1A1A1A;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      line-height: 1.6;
+      max-height: 220px;
       overflow-y: auto;
-      white-space: pre-wrap;
-      word-break: break-all;
-      line-height: 1.5;
+      padding: 0.85rem 1rem;
     }
 
-    /* Invoices table */
-    .invoices-table {
+    .console-line {
+      display: flex;
+      gap: 0.65rem;
+      margin-bottom: 0.2rem;
+      align-items: flex-start;
+    }
+
+    .console-ts {
+      color: #555;
+      flex-shrink: 0;
+      user-select: none;
+    }
+
+    .console-line.ok   .console-msg { color: #81C784; }
+    .console-line.err  .console-msg { color: #EF9A9A; }
+    .console-line.info .console-msg { color: #90CAF9; }
+    .console-line.warn .console-msg { color: #FFD54F; }
+    .console-line.sys  .console-msg { color: #666; font-style: italic; }
+
+    .console-wrap::-webkit-scrollbar { width: 4px; }
+    .console-wrap::-webkit-scrollbar-track { background: transparent; }
+    .console-wrap::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+    /* ========================================================================
+       INVOICE TABLE
+       ======================================================================== */
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 13px;
+      font-size: 0.8rem;
     }
 
-    .invoices-table th {
-      text-align: left;
-      padding: 10px 14px;
-      color: var(--text-muted);
-      border-bottom: 1px solid var(--card-border);
+    thead th {
+      font-size: 0.68rem;
       font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-faint);
+      padding: 0.6rem 0.9rem;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      background: var(--bg-surface-alt);
+      white-space: nowrap;
     }
 
-    .invoices-table td {
-      padding: 12px 14px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    tbody td {
+      padding: 0.7rem 0.9rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-main);
+      vertical-align: middle;
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+
+    tbody tr:hover td { background: var(--accent-clay-bg); }
+
+    .cell-mono {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
     }
 
     .badge {
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      padding: 0.15rem 0.5rem;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      font-weight: 600;
       text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
 
-    .badge-paid { background: rgba(16, 185, 129, 0.2); color: var(--success); }
-    .badge-unpaid { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+    .badge-paid    { background: var(--accent-green-bg); color: var(--accent-green); }
+    .badge-draft   { background: var(--accent-amber-bg); color: var(--accent-amber); }
+    .badge-overdue { background: var(--accent-red-bg);   color: var(--accent-red); }
+
+    /* ========================================================================
+       HEALTH BAR
+       ======================================================================== */
+    .health-row {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.65rem 1.1rem;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 1.75rem;
+      font-size: 0.78rem;
+      flex-wrap: wrap;
+      gap: 0.5rem 1.25rem;
+    }
+
+    .health-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .health-label { color: var(--text-subtle); font-weight: 500; }
+    .health-val   { font-family: var(--font-mono); font-weight: 600; }
+    .health-val.ok  { color: var(--accent-green); }
+    .health-val.err { color: var(--accent-red); }
+
+    .health-sep {
+      width: 1px;
+      height: 14px;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    /* ========================================================================
+       SPINNER
+       ======================================================================== */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      display: inline-block;
+      width: 12px; height: 12px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent-clay);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+    }
+
+    /* ========================================================================
+       TOAST NOTIFICATIONS
+       ======================================================================== */
+    .toast-stack {
+      position: fixed;
+      bottom: 1.25rem;
+      right: 1.25rem;
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-width: 340px;
+    }
+
+    .toast {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent-clay);
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 1rem;
+      font-size: 0.78rem;
+      color: var(--text-main);
+      box-shadow: var(--shadow-md);
+      animation: toastIn 0.2s ease;
+    }
+
+    .toast.ok  { border-left-color: var(--accent-green); }
+    .toast.err { border-left-color: var(--accent-red); }
+    .toast.warn{ border-left-color: var(--accent-amber); }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ========================================================================
+       MISC UTILITIES
+       ======================================================================== */
+    .empty-state {
+      text-align: center;
+      padding: 2.5rem 1rem;
+      color: var(--text-faint);
+      font-size: 0.82rem;
+      font-style: italic;
+    }
+
+    .refresh-spin { animation: spin 0.6s linear; }
+
+    hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+
+    /* Theme toggle icon */
+    .theme-icon-sun  { display: none; }
+    .theme-icon-moon { display: inline; }
+    [data-theme="dark"] .theme-icon-sun  { display: inline; }
+    [data-theme="dark"] .theme-icon-moon { display: none; }
   </style>
 </head>
 <body>
 
-  <header>
-    <a href="/" class="brand">
-      <div class="brand-logo">⚡</div>
-      <div class="brand-title">Usage Metering & Billing Engine</div>
+<!-- ============================================================
+     TOP NAV
+     ============================================================ -->
+<nav class="top-nav">
+  <div class="nav-left">
+    <a class="brand" href="/">
+      <span class="brand-name">Billing Engine</span>
+      <span class="brand-tag">v1.0</span>
     </a>
-    <div style="display: flex; align-items: center; gap: 14px;">
-      <a href="/docs" target="_blank" class="btn btn-secondary" style="font-size: 13px; padding: 6px 12px;">Swagger API Docs ↗</a>
-      <div class="status-badge">
-        <span class="pulse"></span>
-        <span id="service-status">Engine Active</span>
-      </div>
+    <span class="nav-divider"></span>
+    <div class="tenant-selector">
+      <span class="tenant-label">Tenant</span>
+      <select class="tenant-select" id="tenantSelect">
+        <option value="tenant_001">tenant_001</option>
+        <option value="tenant_002">tenant_002</option>
+        <option value="tenant_003">tenant_003</option>
+        <option value="tenant_custom">custom…</option>
+      </select>
     </div>
-  </header>
+  </div>
+  <div class="nav-right">
+    <span id="navHealth" class="nav-btn" style="cursor:default; gap:0.4rem;">
+      <span class="status-dot" id="navStatusDot"></span>
+      <span id="navStatusText">connecting…</span>
+    </span>
+    <a href="/docs" target="_blank" class="nav-btn">API Docs ↗</a>
+    <button class="nav-btn" id="refreshBtn" title="Refresh metrics">⟳</button>
+    <button class="nav-btn" id="themeBtn" title="Toggle theme">
+      <span class="theme-icon-moon">☽</span>
+      <span class="theme-icon-sun">☀</span>
+    </button>
+    <button class="nav-btn primary" id="genInvoiceBtn">Generate Invoice</button>
+  </div>
+</nav>
 
-  <main>
-    <!-- Tenant Bar -->
-    <div class="tenant-bar">
-      <div class="tenant-input-group">
-        <label for="tenant-id-input">Current Customer ID:</label>
-        <input type="text" id="tenant-id-input" value="tenant-demo" placeholder="e.g. tenant-demo">
-      </div>
-      <div style="display: flex; gap: 10px;">
-        <button class="btn" onclick="fetchUsage()">Refresh Dashboard</button>
-        <button class="btn btn-secondary" onclick="generateInvoice()">Create Invoice</button>
-      </div>
+<!-- ============================================================
+     WORKSPACE
+     ============================================================ -->
+<main class="workspace">
+
+  <!-- HEALTH STATUS BAR -->
+  <div class="health-row" id="healthBar">
+    <div class="health-item">
+      <span class="health-label">API</span>
+      <span class="health-val" id="healthApiStatus">—</span>
     </div>
-
-    <!-- Metrics Cards -->
-    <div class="metric-grid">
-      <div class="metric-card">
-        <div class="metric-label">Current Tier</div>
-        <div class="metric-value" id="val-tier" style="color: var(--accent);">Free</div>
-        <div class="metric-sub" id="val-tier-sub">Limit: 10,000 tokens / cycle</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Total Spend (USD)</div>
-        <div class="metric-value" id="val-cost" style="color: var(--success);">$0.00</div>
-        <div class="metric-sub" id="val-microcents">0 microcents</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Token Consumption</div>
-        <div class="metric-value" id="val-tokens">0</div>
-        <div class="quota-progress">
-          <div class="quota-bar" id="val-quota-bar"></div>
-        </div>
-        <div class="metric-sub" id="val-quota-percent">0% of quota used</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">API Calls</div>
-        <div class="metric-value" id="val-events">0</div>
-        <div class="metric-sub">Recorded events</div>
-      </div>
+    <span class="health-sep"></span>
+    <div class="health-item">
+      <span class="health-label">DB</span>
+      <span class="health-val" id="healthDbStatus">—</span>
     </div>
+    <span class="health-sep"></span>
+    <div class="health-item">
+      <span class="health-label">Tenant</span>
+      <span class="health-val cell-mono" id="healthTenant">—</span>
+    </div>
+    <span class="health-sep"></span>
+    <div class="health-item">
+      <span class="health-label">Tier</span>
+      <span id="healthTier">—</span>
+    </div>
+    <span class="health-sep"></span>
+    <div class="health-item">
+      <span class="health-label">Last refresh</span>
+      <span class="health-val cell-mono" id="healthTs">—</span>
+    </div>
+  </div>
 
-    <!-- Interactive Simulator & Console -->
-    <div class="dashboard-grid">
-      <!-- Ingest Event Panel -->
+  <!-- METRIC CARDS -->
+  <div class="section-header">
+    <h2 class="section-title">Usage Summary</h2>
+    <span class="section-meta" id="metricPeriod">current billing period</span>
+  </div>
+
+  <div class="metrics-grid">
+    <div class="metric-card clay">
+      <div class="metric-badge">💰</div>
+      <div class="metric-label">Total Cost (USD)</div>
+      <div class="metric-value loading" id="metricCost">—</div>
+      <div class="metric-sub" id="metricCostMicro">— microcents</div>
+    </div>
+    <div class="metric-card amber">
+      <div class="metric-badge">🔢</div>
+      <div class="metric-label">Total Tokens</div>
+      <div class="metric-value loading" id="metricTokens">—</div>
+      <div class="metric-sub" id="metricEvents">— events</div>
+    </div>
+    <div class="metric-card green">
+      <div class="metric-badge">📊</div>
+      <div class="metric-label">Event Count</div>
+      <div class="metric-value loading" id="metricEventCount">—</div>
+      <div class="metric-sub">metered events recorded</div>
+    </div>
+    <div class="metric-card blue">
+      <div class="metric-badge">⚡</div>
+      <div class="metric-label">Avg Cost / Event</div>
+      <div class="metric-value loading" id="metricAvgCost">—</div>
+      <div class="metric-sub">cents per event</div>
+    </div>
+  </div>
+
+  <!-- SIMULATOR + CONSOLE -->
+  <div class="two-col">
+
+    <!-- EVENT SIMULATOR -->
+    <div>
+      <div class="section-header">
+        <h2 class="section-title">Event Simulator</h2>
+        <span class="section-meta">POST /api/v1/events</span>
+      </div>
       <div class="panel">
-        <div class="panel-header">
-          <div class="panel-title">🚀 Ingest Usage Event (Instant Metering)</div>
-          <span style="font-size: 12px; color: var(--text-dim);">POST /events</span>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Event Type</label>
-            <select id="event-type">
-              <option value="llm_query">LLM Query</option>
-              <option value="api_call">Standard API Call</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Idempotency Key (Optional)</label>
-            <input type="text" id="idempotency-key" placeholder="Auto-generated if blank">
+        <div class="panel-head">
+          <span class="panel-title">🧪 Inject Metering Event</span>
+          <div style="display:flex;gap:0.5rem;">
+            <button class="btn btn-secondary" id="presetLlmBtn" style="font-size:0.72rem;padding:0.25rem 0.6rem;">LLM preset</button>
+            <button class="btn btn-secondary" id="presetApiBtn" style="font-size:0.72rem;padding:0.25rem 0.6rem;">API preset</button>
           </div>
         </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Input Tokens</label>
-            <input type="number" id="input-tokens" value="850">
-          </div>
-          <div class="form-group">
-            <label>Output Tokens</label>
-            <input type="number" id="output-tokens" value="220">
-          </div>
+        <div class="panel-body">
+          <form class="sim-form" id="simForm" autocomplete="off">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Customer ID</label>
+                <input type="text" id="simCustomer" value="tenant_001" placeholder="tenant_xxx" required>
+              </div>
+              <div class="form-group">
+                <label>Event Type</label>
+                <select id="simEventType">
+                  <option value="llm_token_usage">llm_token_usage</option>
+                  <option value="api_call">api_call</option>
+                  <option value="storage_gb_hour">storage_gb_hour</option>
+                  <option value="compute_minute">compute_minute</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Quantity</label>
+                <input type="number" id="simQuantity" value="1" min="1">
+              </div>
+              <div class="form-group">
+                <label>Input Tokens</label>
+                <input type="number" id="simInputTokens" value="1000" min="0">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Output Tokens</label>
+                <input type="number" id="simOutputTokens" value="500" min="0">
+              </div>
+              <div class="form-group">
+                <label>Cached Tokens</label>
+                <input type="number" id="simCachedTokens" value="0" min="0">
+              </div>
+            </div>
+            <div class="btn-group">
+              <button type="submit" class="btn btn-primary" id="sendEventBtn">Send Event</button>
+              <button type="button" class="btn btn-secondary" id="clearSimBtn">Clear</button>
+            </div>
+          </form>
         </div>
-
-        <button class="btn" onclick="sendEvent()" style="width: 100%; justify-content: center;">
-          ⚡ Send Event & Meter Cost
-        </button>
       </div>
+    </div>
 
-      <!-- Live Terminal Output -->
-      <div class="panel">
-        <div class="panel-header">
-          <div class="panel-title">💻 Real-Time Execution Console</div>
-          <button class="btn btn-secondary" onclick="clearConsole()" style="padding: 4px 10px; font-size: 11px;">Clear</button>
+    <!-- CONSOLE -->
+    <div>
+      <div class="section-header">
+        <h2 class="section-title">Activity Console</h2>
+        <div style="display:flex;gap:0.5rem;align-items:center;">
+          <span class="section-meta" id="consoleCount">0 entries</span>
+          <button class="btn btn-secondary" id="clearConsoleBtn" style="font-size:0.72rem;padding:0.25rem 0.6rem;">Clear</button>
         </div>
-        <div class="console-box" id="console-output">// Initializing console...
-// Ready to receive real-time events.
-</div>
+      </div>
+      <div class="panel" style="height:calc(100% - 2.5rem);">
+        <div class="panel-head">
+          <span class="panel-title">📡 Request / Response Log</span>
+          <span id="consoleLive" style="font-size:0.68rem;font-family:var(--font-mono);color:var(--accent-green);">● LIVE</span>
+        </div>
+        <div class="panel-body" style="padding:0.6rem;">
+          <div class="console-wrap" id="consoleWrap">
+            <div class="console-line sys"><span class="console-ts"></span><span class="console-msg">Console ready. Send an event or generate an invoice to begin.</span></div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Invoices List -->
-    <div class="panel">
-      <div class="panel-header">
-        <div class="panel-title">📑 Invoices & Stripe Billing Sync</div>
-        <span style="font-size: 12px; color: var(--text-dim);">Automated Billing Cycles</span>
-      </div>
-      <div style="overflow-x: auto;">
-        <table class="invoices-table">
-          <thead>
-            <tr>
-              <th>Invoice ID</th>
-              <th>Customer</th>
-              <th>Period</th>
-              <th>Total Cost</th>
-              <th>Status</th>
-              <th>Created</th>
-            </tr>
-          </thead>
-          <tbody id="invoices-body">
-            <tr>
-              <td colspan="6" style="text-align: center; color: var(--text-dim);">No invoices generated yet. Click "Create Invoice" above to generate one.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+  </div>
+
+  <!-- INVOICES -->
+  <div class="section-header">
+    <h2 class="section-title">Invoices</h2>
+    <div style="display:flex;gap:0.65rem;align-items:center;">
+      <span class="section-meta" id="invoiceCount">0 invoices</span>
+      <button class="btn btn-secondary" id="refreshInvoicesBtn" style="font-size:0.72rem;padding:0.25rem 0.6rem;">⟳ Refresh</button>
     </div>
-  </main>
+  </div>
 
-  <script>
-    function log(msg) {
-      const box = document.getElementById('console-output');
-      const time = new Date().toLocaleTimeString();
-      box.textContent = `[${time}] ${msg}\n` + box.textContent;
+  <div class="panel">
+    <div class="table-wrap">
+      <table id="invoiceTable">
+        <thead>
+          <tr>
+            <th>Invoice ID</th>
+            <th>Customer</th>
+            <th>Issued</th>
+            <th>Total (USD)</th>
+            <th>Tokens</th>
+            <th>Events</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="invoiceBody">
+          <tr><td colspan="7"><div class="empty-state">No invoices yet — generate one above.</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- Toast stack -->
+<div class="toast-stack" id="toastStack"></div>
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script>
+  /* ——— Theme toggle ——— */
+  const html = document.documentElement;
+  const themeBtn = document.getElementById('themeBtn');
+  themeBtn.addEventListener('click', () => {
+    html.dataset.theme = html.dataset.theme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('billing-theme', html.dataset.theme);
+  });
+  const savedTheme = localStorage.getItem('billing-theme');
+  if (savedTheme) html.dataset.theme = savedTheme;
+
+  /* ——— State ——— */
+  const API = '';  // same-origin
+  let currentTenant = document.getElementById('tenantSelect').value;
+  let consoleCount = 0;
+  const invoiceCache = new Map();
+
+  /* ——— Tenant select ——— */
+  document.getElementById('tenantSelect').addEventListener('change', e => {
+    let val = e.target.value;
+    if (val === 'tenant_custom') {
+      const custom = prompt('Enter tenant ID:');
+      if (custom) {
+        currentTenant = custom.trim();
+        document.getElementById('simCustomer').value = currentTenant;
+        logConsole('info', `Tenant switched to ${currentTenant}`);
+        refreshMetrics();
+      }
+    } else {
+      currentTenant = val;
+      document.getElementById('simCustomer').value = currentTenant;
+      logConsole('info', `Tenant switched to ${currentTenant}`);
+      refreshMetrics();
     }
+  });
 
-    function clearConsole() {
-      document.getElementById('console-output').textContent = '// Console cleared.';
+  /* ——— Console ——— */
+  function logConsole(type, msg) {
+    const wrap = document.getElementById('consoleWrap');
+    const now = new Date().toLocaleTimeString('en-GB', { hour12: false });
+    const line = document.createElement('div');
+    line.className = `console-line ${type}`;
+    line.innerHTML = `<span class="console-ts">${now}</span><span class="console-msg">${escapeHtml(msg)}</span>`;
+    wrap.appendChild(line);
+    wrap.scrollTop = wrap.scrollHeight;
+    consoleCount++;
+    document.getElementById('consoleCount').textContent = `${consoleCount} entries`;
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  document.getElementById('clearConsoleBtn').addEventListener('click', () => {
+    document.getElementById('consoleWrap').innerHTML = '<div class="console-line sys"><span class="console-ts"></span><span class="console-msg">Console cleared.</span></div>';
+    consoleCount = 0;
+    document.getElementById('consoleCount').textContent = '0 entries';
+  });
+
+  /* ——— Toast ——— */
+  function toast(msg, type = 'info') {
+    const stack = document.getElementById('toastStack');
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.textContent = msg;
+    stack.appendChild(el);
+    setTimeout(() => el.remove(), 4000);
+  }
+
+  /* ——— Health check ——— */
+  async function checkHealth() {
+    const dot = document.getElementById('navStatusDot');
+    const txt = document.getElementById('navStatusText');
+    const api = document.getElementById('healthApiStatus');
+    const db  = document.getElementById('healthDbStatus');
+    try {
+      const r = await fetch(`${API}/health`);
+      const data = await r.json();
+      const ok = data.status === 'healthy';
+      dot.style.background = ok ? 'var(--accent-green)' : 'var(--accent-red)';
+      txt.textContent = ok ? 'healthy' : 'degraded';
+      api.textContent = ok ? 'ok' : 'error';
+      api.className = `health-val ${ok ? 'ok' : 'err'}`;
+      db.textContent = data.database || 'ok';
+      db.className   = `health-val ok`;
+    } catch(e) {
+      dot.style.background = 'var(--accent-red)';
+      txt.textContent = 'offline';
+      api.textContent = 'unreachable'; api.className = 'health-val err';
     }
+  }
 
-    async function fetchUsage() {
-      const tenantId = document.getElementById('tenant-id-input').value.trim() || 'tenant-demo';
-      log(`Fetching usage metrics for '${tenantId}'...`);
+  /* ——— Metrics ——— */
+  async function refreshMetrics() {
+    const btn = document.getElementById('refreshBtn');
+    btn.classList.add('refresh-spin');
+    document.getElementById('healthTenant').textContent = currentTenant;
+    document.getElementById('healthTs').textContent = new Date().toLocaleTimeString();
 
+    // Reset to loading
+    ['metricCost','metricTokens','metricEventCount','metricAvgCost'].forEach(id => {
+      const el = document.getElementById(id);
+      el.className = 'metric-value loading';
+      el.innerHTML = '<span class="spinner"></span>';
+    });
+
+    try {
+      const r = await fetch(`${API}/api/v1/customers/${currentTenant}/usage`);
+      if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+      const d = await r.json();
+
+      const costCents = (d.total_cost_cents || 0);
+      const costUSD   = (costCents / 100).toFixed(4);
+      const tokens    = (d.total_tokens || 0).toLocaleString();
+      const events    = (d.event_count || 0);
+      const avgCents  = events > 0 ? (costCents / events).toFixed(3) : '0.000';
+
+      setMetric('metricCost', `$${costUSD}`);
+      document.getElementById('metricCostMicro').textContent = `${(d.total_cost_microcents||0).toLocaleString()} microcents`;
+
+      setMetric('metricTokens', tokens);
+      document.getElementById('metricEvents').textContent = `${events} events`;
+
+      setMetric('metricEventCount', events.toLocaleString());
+      setMetric('metricAvgCost', avgCents);
+
+      // Tier
+      const tier = (d.tier || 'starter').toLowerCase();
+      document.getElementById('healthTier').innerHTML = `<span class="tier-chip ${tier}">${tier}</span>`;
+
+      logConsole('ok', `Metrics refreshed for ${currentTenant} — $${costUSD} · ${tokens} tokens · ${events} events`);
+    } catch(e) {
+      ['metricCost','metricTokens','metricEventCount','metricAvgCost'].forEach(id => {
+        setMetric(id, 'err');
+      });
+      logConsole('err', `Metrics fetch failed: ${e.message}`);
+      toast(`Failed to load metrics: ${e.message}`, 'err');
+    } finally {
+      btn.classList.remove('refresh-spin');
+    }
+  }
+
+  function setMetric(id, val) {
+    const el = document.getElementById(id);
+    el.className = 'metric-value';
+    el.textContent = val;
+  }
+
+  document.getElementById('refreshBtn').addEventListener('click', () => {
+    checkHealth();
+    refreshMetrics();
+  });
+
+  /* ——— Presets ——— */
+  document.getElementById('presetLlmBtn').addEventListener('click', () => {
+    document.getElementById('simEventType').value = 'llm_token_usage';
+    document.getElementById('simQuantity').value  = '1';
+    document.getElementById('simInputTokens').value  = '2048';
+    document.getElementById('simOutputTokens').value = '512';
+    document.getElementById('simCachedTokens').value = '256';
+  });
+
+  document.getElementById('presetApiBtn').addEventListener('click', () => {
+    document.getElementById('simEventType').value = 'api_call';
+    document.getElementById('simQuantity').value  = '100';
+    document.getElementById('simInputTokens').value  = '0';
+    document.getElementById('simOutputTokens').value = '0';
+    document.getElementById('simCachedTokens').value = '0';
+  });
+
+  document.getElementById('clearSimBtn').addEventListener('click', () => {
+    document.getElementById('simForm').reset();
+    document.getElementById('simCustomer').value = currentTenant;
+  });
+
+  /* ——— Send event ——— */
+  document.getElementById('simForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = document.getElementById('sendEventBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Sending…';
+
+    const payload = {
+      customer_id:    document.getElementById('simCustomer').value.trim(),
+      event_type:     document.getElementById('simEventType').value,
+      quantity:       parseInt(document.getElementById('simQuantity').value) || 1,
+      input_tokens:   parseInt(document.getElementById('simInputTokens').value)  || 0,
+      output_tokens:  parseInt(document.getElementById('simOutputTokens').value) || 0,
+      cached_tokens:  parseInt(document.getElementById('simCachedTokens').value) || 0,
+    };
+
+    logConsole('info', `POST /api/v1/events — ${JSON.stringify(payload)}`);
+
+    try {
+      const r = await fetch(`${API}/api/v1/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.detail || JSON.stringify(data));
+      logConsole('ok', `✓ Event recorded — id: ${data.id || data.event_id || '?'}, cost: ${data.cost_cents ?? data.total_cost_cents ?? '?'}¢`);
+      toast('Event recorded successfully', 'ok');
+      setTimeout(refreshMetrics, 300);
+    } catch(err) {
+      logConsole('err', `✗ Event failed — ${err.message}`);
+      toast(`Event failed: ${err.message}`, 'err');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Send Event';
+    }
+  });
+
+  /* ——— Generate Invoice ——— */
+  async function generateInvoice() {
+    const btn = document.getElementById('genInvoiceBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>';
+
+    logConsole('info', `POST /api/v1/invoices — customer: ${currentTenant}`);
+
+    try {
+      const r = await fetch(`${API}/api/v1/invoices`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customer_id: currentTenant }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.detail || JSON.stringify(data));
+      logConsole('ok', `✓ Invoice generated — id: ${data.invoice_id || data.id}, amount: ${data.total_amount_cents ?? data.total_cost_cents ?? '?'}¢`);
+      toast(`Invoice created for ${currentTenant}`, 'ok');
+      await loadInvoices();
+    } catch(err) {
+      logConsole('err', `✗ Invoice failed — ${err.message}`);
+      toast(`Invoice failed: ${err.message}`, 'err');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Generate Invoice';
+    }
+  }
+
+  document.getElementById('genInvoiceBtn').addEventListener('click', generateInvoice);
+
+  /* ——— Load invoices ——— */
+  async function loadInvoices() {
+    const tbody = document.getElementById('invoiceBody');
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><span class="spinner"></span> Loading invoices…</div></td></tr>`;
+
+    // Try to fetch invoices — the endpoint may vary, we'll try a few patterns
+    const endpoints = [
+      `/api/v1/customers/${currentTenant}/invoices`,
+      `/api/v1/invoices?customer_id=${currentTenant}`,
+      `/api/v1/invoices`,
+    ];
+
+    let invoices = null;
+    for (const ep of endpoints) {
       try {
-        const res = await fetch(`/api/v1/customers/${tenantId}/usage`);
-        if (!res.ok) {
-          log(`Error: Received status ${res.status}`);
-          return;
+        const r = await fetch(`${API}${ep}`);
+        if (r.ok) {
+          const d = await r.json();
+          invoices = Array.isArray(d) ? d : (d.invoices || d.items || []);
+          if (invoices.length !== undefined) break;
         }
-        const data = await res.json();
-        log(`Usage update received: $${(data.total_cost_cents / 100).toFixed(2)} (${data.total_tokens} tokens)`);
-
-        document.getElementById('val-tier').textContent = data.tier.toUpperCase();
-        document.getElementById('val-cost').textContent = `$${(data.total_cost_cents / 100).toFixed(2)}`;
-        document.getElementById('val-microcents').textContent = `${data.total_cost_microcents.toLocaleString()} microcents`;
-        document.getElementById('val-tokens').textContent = data.total_tokens.toLocaleString();
-        document.getElementById('val-events').textContent = data.event_count.toLocaleString();
-
-        const limit = data.tier.toLowerCase() === 'free' ? 10000 : 1000000;
-        const pct = Math.min(100, Math.round((data.total_tokens / limit) * 100));
-        document.getElementById('val-quota-bar').style.width = `${pct}%`;
-        document.getElementById('val-quota-percent').textContent = `${pct}% of ${limit.toLocaleString()} quota used`;
-      } catch (err) {
-        log(`Network error: ${err.message}`);
-      }
+      } catch(_) {}
     }
 
-    async function sendEvent() {
-      const tenantId = document.getElementById('tenant-id-input').value.trim() || 'tenant-demo';
-      const eventType = document.getElementById('event-type').value;
-      const idempotencyKey = document.getElementById('idempotency-key').value.trim() || null;
-      const inputTokens = parseInt(document.getElementById('input-tokens').value) || 0;
-      const outputTokens = parseInt(document.getElementById('output-tokens').value) || 0;
-
-      const payload = {
-        customer_id: tenantId,
-        event_type: eventType,
-        quantity: 1,
-        input_tokens: inputTokens,
-        output_tokens: outputTokens,
-        cached_tokens: 0,
-        idempotency_key: idempotencyKey
-      };
-
-      log(`Sending POST /events for ${tenantId}...`);
-      try {
-        const headers = { 'Content-Type': 'application/json' };
-        if (idempotencyKey) {
-          headers['Idempotency-Key'] = idempotencyKey;
-        }
-
-        const res = await fetch('/api/v1/events', {
-          method: 'POST',
-          headers: headers,
-          body: JSON.stringify(payload)
-        });
-
-        const data = await res.json();
-        if (res.ok) {
-          log(`Event processed! Cost: $${(data.cost_cents / 100).toFixed(2)} (${data.cost_microcents} microcents). Duplicate: ${data.is_duplicate}`);
-          fetchUsage();
-        } else {
-          log(`Event rejected [HTTP ${res.status}]: ${JSON.stringify(data)}`);
-        }
-      } catch (err) {
-        log(`Failed: ${err.message}`);
-      }
+    if (invoices === null) {
+      tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">Could not load invoice list (endpoint not available).</div></td></tr>`;
+      return;
     }
 
-    async function generateInvoice() {
-      const tenantId = document.getElementById('tenant-id-input').value.trim() || 'tenant-demo';
-      log(`Generating invoice for '${tenantId}'...`);
-
-      try {
-        const res = await fetch('/api/v1/invoices', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ customer_id: tenantId })
-        });
-        const data = await res.json();
-        if (res.ok) {
-          log(`Invoice created successfully! ID: ${data.id}, Total: $${(data.amount_cents / 100).toFixed(2)}`);
-          fetchUsage();
-          addInvoiceRow(data);
-        } else {
-          log(`Invoice creation failed: ${JSON.stringify(data)}`);
-        }
-      } catch (err) {
-        log(`Error: ${err.message}`);
-      }
+    if (!invoices.length) {
+      tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">No invoices yet — generate one above.</div></td></tr>`;
+      document.getElementById('invoiceCount').textContent = '0 invoices';
+      return;
     }
 
-    function addInvoiceRow(inv) {
-      const tbody = document.getElementById('invoices-body');
-      if (tbody.children[0] && tbody.children[0].children.length === 1) {
-        tbody.innerHTML = '';
-      }
+    document.getElementById('invoiceCount').textContent = `${invoices.length} invoice${invoices.length !== 1 ? 's' : ''}`;
+    tbody.innerHTML = '';
+
+    invoices.slice().reverse().forEach(inv => {
+      const id      = inv.invoice_id || inv.id || '—';
+      const cust    = inv.customer_id || inv.tenant_id || '—';
+      const issued  = inv.created_at ? new Date(inv.created_at).toLocaleString() : '—';
+      const cents   = inv.total_amount_cents ?? inv.total_cost_cents ?? 0;
+      const usd     = (cents / 100).toFixed(4);
+      const tokens  = (inv.total_tokens || 0).toLocaleString();
+      const events  = (inv.event_count || 0).toLocaleString();
+      const status  = (inv.status || 'draft').toLowerCase();
+      const badgeCls = status === 'paid' ? 'badge-paid' : status === 'overdue' ? 'badge-overdue' : 'badge-draft';
+
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td style="font-family: monospace; color: var(--accent);">${inv.id.substring(0, 12)}...</td>
-        <td>${inv.customer_id}</td>
-        <td>${inv.billing_period}</td>
-        <td style="font-weight: 700; color: var(--success);">$${(inv.amount_cents / 100).toFixed(2)}</td>
-        <td><span class="badge ${inv.status === 'paid' ? 'badge-paid' : 'badge-unpaid'}">${inv.status}</span></td>
-        <td>${new Date().toLocaleTimeString()}</td>
+        <td class="cell-mono" style="font-size:0.68rem;color:var(--text-subtle);">${escapeHtml(id)}</td>
+        <td class="cell-mono">${escapeHtml(cust)}</td>
+        <td style="color:var(--text-subtle);font-size:0.75rem;">${issued}</td>
+        <td class="cell-mono" style="font-weight:600;">$${usd}</td>
+        <td class="cell-mono" style="color:var(--text-subtle);">${tokens}</td>
+        <td class="cell-mono" style="color:var(--text-subtle);">${events}</td>
+        <td><span class="badge ${badgeCls}">${status}</span></td>
       `;
-      tbody.prepend(tr);
-    }
-
-    // Auto load on start
-    window.addEventListener('DOMContentLoaded', () => {
-      fetchUsage();
+      tbody.appendChild(tr);
     });
-  </script>
+  }
+
+  document.getElementById('refreshInvoicesBtn').addEventListener('click', loadInvoices);
+
+  /* ——— INIT ——— */
+  (async function init() {
+    await checkHealth();
+    await refreshMetrics();
+    await loadInvoices();
+    // Auto-refresh every 60s
+    setInterval(() => {
+      checkHealth();
+      refreshMetrics();
+    }, 60_000);
+  })();
+</script>
+
 </body>
 </html>
