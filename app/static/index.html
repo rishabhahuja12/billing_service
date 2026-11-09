@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Usage Metering & Billing Engine | Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(18, 24, 38, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover: rgba(255, 255, 255, 0.12);
+      --primary: #6366f1;
+      --primary-glow: rgba(99, 102, 241, 0.35);
+      --accent: #06b6d4;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+                  radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.12) 0%, transparent 40%),
+                  var(--bg);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Navigation */
+    header {
+      padding: 18px 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--card-border);
+      backdrop-filter: blur(12px);
+      background: rgba(9, 13, 22, 0.65);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 19px;
+      box-shadow: 0 0 16px var(--primary-glow);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--success);
+    }
+
+    .pulse {
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--success);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.3); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 32px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    /* Tenant Selector Bar */
+    .tenant-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 16px 24px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .tenant-input-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      max-width: 480px;
+    }
+
+    .tenant-input-group label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    input, select, textarea {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.2s ease;
+      width: 100%;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 12px var(--primary-glow);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .btn {
+      background: linear-gradient(135deg, var(--primary), #4f46e5);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 16px var(--primary-glow);
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.07);
+      box-shadow: none;
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Metric Grid */
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+
+    .metric-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 22px;
+      backdrop-filter: blur(16px);
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .metric-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--card-hover);
+    }
+
+    .metric-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+
+    .metric-value {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .metric-sub {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 6px;
+    }
+
+    /* Progress bar */
+    .quota-progress {
+      width: 100%;
+      height: 7px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 99px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+
+    .quota-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--primary));
+      border-radius: 99px;
+      transition: width 0.4s ease;
+    }
+
+    /* Action Grid */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 1024px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      backdrop-filter: blur(16px);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 14px;
+    }
+
+    .panel-title {
+      font-size: 17px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    /* Terminal Console */
+    .console-box {
+      background: #050811;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      color: #38bdf8;
+      max-height: 280px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      line-height: 1.5;
+    }
+
+    /* Invoices table */
+    .invoices-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .invoices-table th {
+      text-align: left;
+      padding: 10px 14px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--card-border);
+      font-weight: 600;
+    }
+
+    .invoices-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .badge-paid { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+    .badge-unpaid { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="/" class="brand">
+      <div class="brand-logo">⚡</div>
+      <div class="brand-title">Usage Metering & Billing Engine</div>
+    </a>
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <a href="/docs" target="_blank" class="btn btn-secondary" style="font-size: 13px; padding: 6px 12px;">Swagger API Docs ↗</a>
+      <div class="status-badge">
+        <span class="pulse"></span>
+        <span id="service-status">Engine Active</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Tenant Bar -->
+    <div class="tenant-bar">
+      <div class="tenant-input-group">
+        <label for="tenant-id-input">Current Customer ID:</label>
+        <input type="text" id="tenant-id-input" value="tenant-demo" placeholder="e.g. tenant-demo">
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button class="btn" onclick="fetchUsage()">Refresh Dashboard</button>
+        <button class="btn btn-secondary" onclick="generateInvoice()">Create Invoice</button>
+      </div>
+    </div>
+
+    <!-- Metrics Cards -->
+    <div class="metric-grid">
+      <div class="metric-card">
+        <div class="metric-label">Current Tier</div>
+        <div class="metric-value" id="val-tier" style="color: var(--accent);">Free</div>
+        <div class="metric-sub" id="val-tier-sub">Limit: 10,000 tokens / cycle</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Total Spend (USD)</div>
+        <div class="metric-value" id="val-cost" style="color: var(--success);">$0.00</div>
+        <div class="metric-sub" id="val-microcents">0 microcents</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Token Consumption</div>
+        <div class="metric-value" id="val-tokens">0</div>
+        <div class="quota-progress">
+          <div class="quota-bar" id="val-quota-bar"></div>
+        </div>
+        <div class="metric-sub" id="val-quota-percent">0% of quota used</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">API Calls</div>
+        <div class="metric-value" id="val-events">0</div>
+        <div class="metric-sub">Recorded events</div>
+      </div>
+    </div>
+
+    <!-- Interactive Simulator & Console -->
+    <div class="dashboard-grid">
+      <!-- Ingest Event Panel -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">🚀 Ingest Usage Event (Instant Metering)</div>
+          <span style="font-size: 12px; color: var(--text-dim);">POST /events</span>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Event Type</label>
+            <select id="event-type">
+              <option value="llm_query">LLM Query</option>
+              <option value="api_call">Standard API Call</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Idempotency Key (Optional)</label>
+            <input type="text" id="idempotency-key" placeholder="Auto-generated if blank">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Input Tokens</label>
+            <input type="number" id="input-tokens" value="850">
+          </div>
+          <div class="form-group">
+            <label>Output Tokens</label>
+            <input type="number" id="output-tokens" value="220">
+          </div>
+        </div>
+
+        <button class="btn" onclick="sendEvent()" style="width: 100%; justify-content: center;">
+          ⚡ Send Event & Meter Cost
+        </button>
+      </div>
+
+      <!-- Live Terminal Output -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">💻 Real-Time Execution Console</div>
+          <button class="btn btn-secondary" onclick="clearConsole()" style="padding: 4px 10px; font-size: 11px;">Clear</button>
+        </div>
+        <div class="console-box" id="console-output">// Initializing console...
+// Ready to receive real-time events.
+</div>
+      </div>
+    </div>
+
+    <!-- Invoices List -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">📑 Invoices & Stripe Billing Sync</div>
+        <span style="font-size: 12px; color: var(--text-dim);">Automated Billing Cycles</span>
+      </div>
+      <div style="overflow-x: auto;">
+        <table class="invoices-table">
+          <thead>
+            <tr>
+              <th>Invoice ID</th>
+              <th>Customer</th>
+              <th>Period</th>
+              <th>Total Cost</th>
+              <th>Status</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody id="invoices-body">
+            <tr>
+              <td colspan="6" style="text-align: center; color: var(--text-dim);">No invoices generated yet. Click "Create Invoice" above to generate one.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function log(msg) {
+      const box = document.getElementById('console-output');
+      const time = new Date().toLocaleTimeString();
+      box.textContent = `[${time}] ${msg}\n` + box.textContent;
+    }
+
+    function clearConsole() {
+      document.getElementById('console-output').textContent = '// Console cleared.';
+    }
+
+    async function fetchUsage() {
+      const tenantId = document.getElementById('tenant-id-input').value.trim() || 'tenant-demo';
+      log(`Fetching usage metrics for '${tenantId}'...`);
+
+      try {
+        const res = await fetch(`/api/v1/customers/${tenantId}/usage`);
+        if (!res.ok) {
+          log(`Error: Received status ${res.status}`);
+          return;
+        }
+        const data = await res.json();
+        log(`Usage update received: $${(data.total_cost_cents / 100).toFixed(2)} (${data.total_tokens} tokens)`);
+
+        document.getElementById('val-tier').textContent = data.tier.toUpperCase();
+        document.getElementById('val-cost').textContent = `$${(data.total_cost_cents / 100).toFixed(2)}`;
+        document.getElementById('val-microcents').textContent = `${data.total_cost_microcents.toLocaleString()} microcents`;
+        document.getElementById('val-tokens').textContent = data.total_tokens.toLocaleString();
+        document.getElementById('val-events').textContent = data.event_count.toLocaleString();
+
+        const limit = data.tier.toLowerCase() === 'free' ? 10000 : 1000000;
+        const pct = Math.min(100, Math.round((data.total_tokens / limit) * 100));
+        document.getElementById('val-quota-bar').style.width = `${pct}%`;
+        document.getElementById('val-quota-percent').textContent = `${pct}% of ${limit.toLocaleString()} quota used`;
+      } catch (err) {
+        log(`Network error: ${err.message}`);
+      }
+    }
+
+    async function sendEvent() {
+      const tenantId = document.getElementById('tenant-id-input').value.trim() || 'tenant-demo';
+      const eventType = document.getElementById('event-type').value;
+      const idempotencyKey = document.getElementById('idempotency-key').value.trim() || null;
+      const inputTokens = parseInt(document.getElementById('input-tokens').value) || 0;
+      const outputTokens = parseInt(document.getElementById('output-tokens').value) || 0;
+
+      const payload = {
+        customer_id: tenantId,
+        event_type: eventType,
+        quantity: 1,
+        input_tokens: inputTokens,
+        output_tokens: outputTokens,
+        cached_tokens: 0,
+        idempotency_key: idempotencyKey
+      };
+
+      log(`Sending POST /events for ${tenantId}...`);
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (idempotencyKey) {
+          headers['Idempotency-Key'] = idempotencyKey;
+        }
+
+        const res = await fetch('/api/v1/events', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          log(`Event processed! Cost: $${(data.cost_cents / 100).toFixed(2)} (${data.cost_microcents} microcents). Duplicate: ${data.is_duplicate}`);
+          fetchUsage();
+        } else {
+          log(`Event rejected [HTTP ${res.status}]: ${JSON.stringify(data)}`);
+        }
+      } catch (err) {
+        log(`Failed: ${err.message}`);
+      }
+    }
+
+    async function generateInvoice() {
+      const tenantId = document.getElementById('tenant-id-input').value.trim() || 'tenant-demo';
+      log(`Generating invoice for '${tenantId}'...`);
+
+      try {
+        const res = await fetch('/api/v1/invoices', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ customer_id: tenantId })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          log(`Invoice created successfully! ID: ${data.id}, Total: $${(data.amount_cents / 100).toFixed(2)}`);
+          fetchUsage();
+          addInvoiceRow(data);
+        } else {
+          log(`Invoice creation failed: ${JSON.stringify(data)}`);
+        }
+      } catch (err) {
+        log(`Error: ${err.message}`);
+      }
+    }
+
+    function addInvoiceRow(inv) {
+      const tbody = document.getElementById('invoices-body');
+      if (tbody.children[0] && tbody.children[0].children.length === 1) {
+        tbody.innerHTML = '';
+      }
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-family: monospace; color: var(--accent);">${inv.id.substring(0, 12)}...</td>
+        <td>${inv.customer_id}</td>
+        <td>${inv.billing_period}</td>
+        <td style="font-weight: 700; color: var(--success);">$${(inv.amount_cents / 100).toFixed(2)}</td>
+        <td><span class="badge ${inv.status === 'paid' ? 'badge-paid' : 'badge-unpaid'}">${inv.status}</span></td>
+        <td>${new Date().toLocaleTimeString()}</td>
+      `;
+      tbody.prepend(tr);
+    }
+
+    // Auto load on start
+    window.addEventListener('DOMContentLoaded', () => {
+      fetchUsage();
+    });
+  </script>
+</body>
+</html>

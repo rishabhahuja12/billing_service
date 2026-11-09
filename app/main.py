@@ -1,12 +1,16 @@
 """FastAPI Application entrypoint with lifecycle, error handling, and routing."""
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse, FileResponse
+from pathlib import Path
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base, SessionLocal
 from app.models.entities import Plan
 from app.api.endpoints import api_router
 from app.services.background import background_worker
+
+STATIC_DIR = Path(__file__).parent / "static"
 
 def init_default_plans():
     """Initializes standard Free and Pro plan blueprints."""
@@ -79,6 +83,12 @@ def health_check():
         "service": "metering-billing-engine",
         "background_worker": background_worker.stats
     }
+
+@app.get("/", include_in_schema=False)
+def serve_dashboard():
+    return FileResponse(STATIC_DIR / "index.html")
+
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 app.include_router(api_router, prefix="/api/v1")
 app.include_router(api_router)
