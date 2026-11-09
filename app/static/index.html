@@ -666,8 +666,66 @@ body {
   background: currentColor;
 }
 .status-badge.paid    { background: var(--emerald-surface); color: var(--emerald); border: 1px solid var(--emerald-border); }
+.status-badge.open    { background: var(--blue-surface);    color: var(--blue);    border: 1px solid var(--blue-border); }
 .status-badge.draft   { background: var(--amber-surface);   color: var(--amber);   border: 1px solid var(--amber-border); }
 .status-badge.overdue { background: var(--rose-surface);    color: var(--rose);    border: 1px solid var(--rose-border); }
+.status-badge.void    { background: rgba(148, 163, 184, 0.14); color: var(--text-muted); border: 1px solid var(--border-subtle); }
+
+/* Quota progress bar */
+.quota-bar-wrap {
+  margin-top: var(--space-2);
+}
+.quota-track {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-surface-elev);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+}
+.quota-fill {
+  width: 100%;
+  height: 100%;
+  background: var(--emerald);
+  border-radius: 3px;
+  transform-origin: left center;
+  transform: scaleX(0);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+.quota-fill.warn {
+  background: var(--amber);
+}
+.quota-fill.danger {
+  background: var(--rose);
+}
+.quota-legend {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.cost-estimator {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-surface-elev);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.cost-estimator-label {
+  color: var(--text-muted);
+}
+.cost-estimator-value {
+  color: var(--emerald);
+  font-weight: 700;
+}
 
 /* Empty state */
 .empty-ledger {
@@ -734,10 +792,11 @@ body {
       <div class="tenant-selector">
         <label for="tenantSelect" class="tenant-selector-label">Tenant:</label>
         <select class="tenant-selector-select" id="tenantSelect" aria-label="Select active tenant">
-          <option value="tenant_001">tenant_001</option>
-          <option value="tenant_002">tenant_002</option>
-          <option value="tenant_003">tenant_003</option>
-          <option value="tenant_custom">Custom...</option>
+          <option value="tenant_001">Acme Corporation (tenant_001 · Free)</option>
+          <option value="tenant_002">Global Tech Labs (tenant_002 · Pro)</option>
+          <option value="tenant_003">Apex Enterprise AI (tenant_003 · Pro)</option>
+          <option value="tenant_demo_acme">Acme Demo Sandbox (tenant_demo_acme · Free)</option>
+          <option value="tenant_custom">Custom Tenant ID...</option>
         </select>
       </div>
 
@@ -779,27 +838,43 @@ body {
 
   <section class="metric-cards-grid" aria-label="Usage Metrics Summary">
     <article class="metric-card">
-      <span class="metric-card-label">Total Accrued Cost</span>
+      <span class="metric-card-label">Total Projected Cost</span>
       <div class="metric-card-number loading" id="mCost">Loading...</div>
       <span class="metric-card-caption mono" id="mCostMicro">0 micro-cents</span>
     </article>
 
     <article class="metric-card">
-      <span class="metric-card-label">Total AI Tokens</span>
+      <span class="metric-card-label">AI Tokens Metered</span>
       <div class="metric-card-number loading" id="mTokens">Loading...</div>
-      <span class="metric-card-caption mono" id="mEvents">0 events recorded</span>
+      <div class="quota-bar-wrap">
+        <div class="quota-track">
+          <div class="quota-fill" id="mTokensBar"></div>
+        </div>
+        <div class="quota-legend">
+          <span id="mTokensUsed">0 used</span>
+          <span id="mTokensLimit">100,000 limit</span>
+        </div>
+      </div>
     </article>
 
     <article class="metric-card">
-      <span class="metric-card-label">Billable Events Count</span>
-      <div class="metric-card-number loading" id="mEventCount">Loading...</div>
-      <span class="metric-card-caption">Total recorded requests</span>
+      <span class="metric-card-label">API Calls Metered</span>
+      <div class="metric-card-number loading" id="mApiCalls">Loading...</div>
+      <div class="quota-bar-wrap">
+        <div class="quota-track">
+          <div class="quota-fill" id="mApiBar"></div>
+        </div>
+        <div class="quota-legend">
+          <span id="mApiUsed">0 used</span>
+          <span id="mApiLimit">1,000 limit</span>
+        </div>
+      </div>
     </article>
 
     <article class="metric-card">
-      <span class="metric-card-label">Average Cost / Event</span>
-      <div class="metric-card-number loading" id="mAvg">Loading...</div>
-      <span class="metric-card-caption">Calculated cost per event</span>
+      <span class="metric-card-label">Token Breakdown</span>
+      <div class="metric-card-number mono" id="mBreakdown" style="font-size: 15px; margin-top: 4px;">0 in / 0 out</div>
+      <span class="metric-card-caption mono" id="mBreakdownSub">0 cached · 0 reasoning</span>
     </article>
   </section>
 
@@ -813,24 +888,30 @@ body {
         <div class="preset-group">
           <button class="btn-pill" id="presetLlm" type="button">LLM Preset</button>
           <button class="btn-pill" id="presetApi" type="button">API Preset</button>
-          <button class="btn-pill" id="presetCompute" type="button">Compute</button>
+          <button class="btn-pill" id="presetHeavy" type="button">Deep Reasoning</button>
         </div>
       </div>
       <div class="panel-card-body">
         <form class="sim-form" id="simForm" autocomplete="off">
           <div class="form-row-2">
             <div class="form-group">
-              <label class="form-label" for="simCust">Customer ID</label>
-              <input class="form-input" type="text" id="simCust" value="tenant_001" required>
+              <label class="form-label" for="simCust">Tenant ID</label>
+              <input class="form-input mono" type="text" id="simCust" value="tenant_001" required>
             </div>
             <div class="form-group">
               <label class="form-label" for="simType">Event Type</label>
               <select class="form-select" id="simType">
-                <option value="llm_token_usage">llm_token_usage</option>
-                <option value="api_call">api_call</option>
-                <option value="storage_gb_hour">storage_gb_hour</option>
-                <option value="compute_minute">compute_minute</option>
+                <option value="ai_tokens">ai_tokens (LLM Inference)</option>
+                <option value="api_call">api_call (Standard API Request)</option>
               </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="simIdem">Idempotency Key (Deduplication)</label>
+            <div style="display:flex; gap:8px;">
+              <input class="form-input mono" type="text" id="simIdem" required style="font-size:12px;">
+              <button type="button" class="btn-pill" id="regenIdemBtn" style="white-space:nowrap;">Regenerate</button>
             </div>
           </div>
 
@@ -839,21 +920,31 @@ body {
               <label class="form-label" for="simQty">Units / Quantity</label>
               <input class="form-input" type="number" id="simQty" value="1" min="1">
             </div>
-            <div class="form-group">
-              <label class="form-label" for="simIn">Input Tokens</label>
+            <div class="form-group" id="groupIn">
+              <label class="form-label" for="simIn">Input Tokens ($0.075 / 1k)</label>
               <input class="form-input" type="number" id="simIn" value="1000" min="0">
             </div>
           </div>
 
-          <div class="form-row-2">
+          <div class="form-row-2" id="groupTokenRow">
             <div class="form-group">
-              <label class="form-label" for="simOut">Output Tokens</label>
+              <label class="form-label" for="simCache">Cached Tokens (50% Off · $0.038 / 1k)</label>
+              <input class="form-input" type="number" id="simCache" value="200" min="0">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="simOut">Output Tokens ($0.300 / 1k)</label>
               <input class="form-input" type="number" id="simOut" value="500" min="0">
             </div>
-            <div class="form-group">
-              <label class="form-label" for="simCache">Cached Tokens (50% Off)</label>
-              <input class="form-input" type="number" id="simCache" value="0" min="0">
-            </div>
+          </div>
+
+          <div class="form-group" id="groupReasoning">
+            <label class="form-label" for="simReasoning">Reasoning Tokens ($0.300 / 1k)</label>
+            <input class="form-input" type="number" id="simReasoning" value="50" min="0">
+          </div>
+
+          <div class="cost-estimator" id="costEstimator">
+            <span class="cost-estimator-label">Pre-Flight Estimated Cost:</span>
+            <span class="cost-estimator-value" id="estCostValue">~248 µ¢ (1¢ billed)</span>
           </div>
 
           <div class="form-actions">
@@ -895,11 +986,11 @@ body {
         <thead>
           <tr>
             <th scope="col">Invoice ID</th>
-            <th scope="col">Customer</th>
-            <th scope="col">Issued Timestamp</th>
+            <th scope="col">Tenant</th>
+            <th scope="col">Created Date</th>
+            <th scope="col">Billing Period</th>
+            <th scope="col" class="text-right">Base / Usage</th>
             <th scope="col" class="text-right">Total USD</th>
-            <th scope="col" class="text-right">Tokens Metered</th>
-            <th scope="col" class="text-right">Events Count</th>
             <th scope="col">Payment Status</th>
           </tr>
         </thead>
@@ -924,6 +1015,21 @@ body {
   const API_ROOT = '';
   let activeTenant = document.getElementById('tenantSelect').value;
 
+  /* Utility: Generate random UUID for Idempotency Key */
+  function generateIdempotencyKey() {
+    if (window.crypto && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return 'evt_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+  }
+
+  // Initialize idempotency key
+  document.getElementById('simIdem').value = generateIdempotencyKey();
+  document.getElementById('regenIdemBtn').addEventListener('click', () => {
+    document.getElementById('simIdem').value = generateIdempotencyKey();
+    logActivity('sys', 'Generated fresh idempotency key.');
+  });
+
   /* Tenant Selector Handler */
   document.getElementById('tenantSelect').addEventListener('change', (e) => {
     const selected = e.target.value;
@@ -932,6 +1038,8 @@ body {
       if (customInput && customInput.trim()) {
         activeTenant = customInput.trim();
         document.getElementById('simCust').value = activeTenant;
+      } else {
+        e.target.value = activeTenant;
       }
     } else {
       activeTenant = selected;
@@ -939,6 +1047,15 @@ body {
     }
     logActivity('info', `Active tenant context switched to ${activeTenant}`);
     syncAllData();
+  });
+
+  document.getElementById('simCust').addEventListener('change', (e) => {
+    const custom = e.target.value.trim();
+    if (custom) {
+      activeTenant = custom;
+      logActivity('info', `Active tenant input updated to ${activeTenant}`);
+      syncAllData();
+    }
   });
 
   /* Console Logging Utility */
@@ -954,6 +1071,21 @@ body {
 
   function sanitize(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  /* Safe API Error Formatter (prevents [object Object]) */
+  function formatApiError(data) {
+    if (!data) return 'Unknown error';
+    if (typeof data === 'string') return data;
+    if (Array.isArray(data.detail)) {
+      return data.detail.map(d => {
+        const field = Array.isArray(d.loc) ? d.loc.filter(x => x !== 'body').join('.') : '';
+        return field ? `${field}: ${d.msg}` : d.msg || JSON.stringify(d);
+      }).join('; ');
+    }
+    if (typeof data.detail === 'string') return data.detail;
+    if (data.message) return data.message;
+    return JSON.stringify(data);
   }
 
   document.getElementById('clearConsole').addEventListener('click', () => {
@@ -980,11 +1112,12 @@ body {
     const hDb  = document.getElementById('hDb');
     try {
       const res = await fetch(`${API_ROOT}/health`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const ok = data.status === 'healthy';
       hApi.textContent = ok ? 'Healthy' : 'Degraded';
       hApi.className   = `telemetry-value ${ok ? 'healthy' : 'degraded'}`;
-      hDb.textContent  = data.database ? String(data.database).toUpperCase() : 'CONNECTED';
+      hDb.textContent  = 'CONNECTED';
       hDb.className    = 'telemetry-value healthy';
     } catch (e) {
       hApi.textContent = 'Unreachable';
@@ -995,10 +1128,9 @@ body {
 
   /* Usage Metrics Sync */
   async function fetchMetrics() {
-    document.getElementById('hTenant').textContent = activeTenant;
     document.getElementById('hTs').textContent = new Date().toLocaleTimeString('en-GB', { hour12: false });
 
-    ['mCost', 'mTokens', 'mEventCount', 'mAvg'].forEach((id) => {
+    ['mCost', 'mTokens', 'mApiCalls'].forEach((id) => {
       const el = document.getElementById(id);
       el.className = 'metric-card-number loading';
       el.textContent = 'Updating...';
@@ -1009,28 +1141,55 @@ body {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const d = await res.json();
 
-      const cents = d.total_cost_cents || 0;
-      const formattedUsd = (cents / 100).toFixed(4);
-      const tokensCount = d.total_tokens || 0;
-      const eventsCount = d.event_count || 0;
-      const averageCents = eventsCount > 0 ? (cents / eventsCount).toFixed(3) : '0.000';
+      // Tenant details
+      document.getElementById('hTenant').textContent = `${d.tenant_name || activeTenant} (${d.tenant_id})`;
 
+      // Plan tier badge
+      const plan = (d.plan_id || 'free').toLowerCase();
+      const tierBadge = plan === 'pro' ? 'scale' : 'starter';
+      document.getElementById('hTier').innerHTML = `<span class="tier-tag ${tierBadge}">${sanitize(plan.toUpperCase())}</span>`;
+
+      // Cost calculations
+      const totalCents = d.total_projected_cost_cents || 0;
+      const usageCents = d.usage_cost_cents || 0;
+      const baseCents = d.base_fee_cents || 0;
+      const formattedUsd = (totalCents / 100).toFixed(4);
       setCardValue('mCost', `$${formattedUsd}`);
-      document.getElementById('mCostMicro').textContent = `${(d.total_cost_microcents || 0).toLocaleString()} micro-cents`;
+      document.getElementById('mCostMicro').textContent = `Base: $${(baseCents / 100).toFixed(2)} | Usage: $${(usageCents / 100).toFixed(2)}`;
 
-      setCardValue('mTokens', Number(tokensCount).toLocaleString());
-      document.getElementById('mEvents').textContent = `${eventsCount} events recorded`;
+      // AI Tokens and Quota bar
+      const tokensUsed = d.ai_tokens_used || 0;
+      const tokensLimit = d.ai_tokens_limit || 100000;
+      const tokensRem = d.ai_tokens_remaining ?? (tokensLimit - tokensUsed);
+      setCardValue('mTokens', tokensUsed.toLocaleString());
 
-      setCardValue('mEventCount', Number(eventsCount).toLocaleString());
-      setCardValue('mAvg', `${averageCents}¢`);
+      const tokenPct = Math.min(100, Math.round((tokensUsed / (tokensLimit || 1)) * 100));
+      const tBar = document.getElementById('mTokensBar');
+      tBar.style.transform = `scaleX(${Math.max(0, Math.min(1, tokenPct / 100))})`;
+      tBar.className = `quota-fill ${tokenPct > 90 ? 'danger' : (tokenPct > 75 ? 'warn' : '')}`;
+      document.getElementById('mTokensUsed').textContent = `${tokensUsed.toLocaleString()} used (${tokenPct}%)`;
+      document.getElementById('mTokensLimit').textContent = `${tokensRem.toLocaleString()} remaining`;
 
-      const rawTier = (d.tier || 'starter').toLowerCase();
-      const tierValid = ['starter', 'growth', 'scale', 'enterprise'].includes(rawTier) ? rawTier : 'starter';
-      document.getElementById('hTier').innerHTML = `<span class="tier-tag ${tierValid}">${sanitize(rawTier)}</span>`;
+      // API Calls and Quota bar
+      const apiCallsUsed = d.api_calls_used || 0;
+      const apiCallsLimit = d.api_calls_limit || 1000;
+      const apiCallsRem = d.api_calls_remaining ?? (apiCallsLimit - apiCallsUsed);
+      setCardValue('mApiCalls', apiCallsUsed.toLocaleString());
 
-      logActivity('ok', `Metrics polled: $${formattedUsd} accrued (${Number(tokensCount).toLocaleString()} tokens)`);
+      const apiPct = Math.min(100, Math.round((apiCallsUsed / (apiCallsLimit || 1)) * 100));
+      const aBar = document.getElementById('mApiBar');
+      aBar.style.transform = `scaleX(${Math.max(0, Math.min(1, apiPct / 100))})`;
+      aBar.className = `quota-fill ${apiPct > 90 ? 'danger' : (apiPct > 75 ? 'warn' : '')}`;
+      document.getElementById('mApiUsed').textContent = `${apiCallsUsed.toLocaleString()} used (${apiPct}%)`;
+      document.getElementById('mApiLimit').textContent = `${apiCallsRem.toLocaleString()} remaining`;
+
+      // Token Breakdown
+      document.getElementById('mBreakdown').textContent = `${(d.input_tokens || 0).toLocaleString()} in · ${(d.output_tokens || 0).toLocaleString()} out`;
+      document.getElementById('mBreakdownSub').textContent = `${(d.cached_input_tokens || 0).toLocaleString()} cached · ${(d.reasoning_tokens || 0).toLocaleString()} reasoning`;
+
+      logActivity('ok', `Usage polled for ${d.tenant_name}: $${formattedUsd} accrued (${tokensUsed.toLocaleString()} tokens)`);
     } catch (err) {
-      ['mCost', 'mTokens', 'mEventCount', 'mAvg'].forEach((id) => setCardValue(id, 'Unavailable'));
+      ['mCost', 'mTokens', 'mApiCalls'].forEach((id) => setCardValue(id, 'Unavailable'));
       logActivity('err', `Failed to poll metrics: ${err.message}`);
     }
   }
@@ -1046,34 +1205,81 @@ body {
     notify('Metrics refreshed', 'ok');
   });
 
+  /* Real-time Pre-flight Cost Estimator */
+  function updateCostEstimate() {
+    const type = document.getElementById('simType').value;
+    const qty = parseInt(document.getElementById('simQty').value, 10) || 1;
+    const inTokens = parseInt(document.getElementById('simIn').value, 10) || 0;
+    const cacheTokens = parseInt(document.getElementById('simCache').value, 10) || 0;
+    const outTokens = parseInt(document.getElementById('simOut').value, 10) || 0;
+    const reasoningTokens = parseInt(document.getElementById('simReasoning').value, 10) || 0;
+
+    let microcents = 0;
+    if (type === 'api_call') {
+      microcents = qty * 100;
+    } else {
+      const inCost = Math.floor((inTokens * 75) / 1000);
+      const cacheCost = Math.floor((cacheTokens * 38) / 1000);
+      const outCost = Math.floor(((outTokens + reasoningTokens) * 300) / 1000);
+      microcents = inCost + cacheCost + outCost;
+    }
+
+    const cents = microcents > 0 ? Math.floor((microcents + 999) / 1000) : 0;
+    document.getElementById('estCostValue').textContent = `~${microcents.toLocaleString()} µ¢ (${cents}¢ billed)`;
+  }
+
+  // Toggle fields on event type change
+  document.getElementById('simType').addEventListener('change', (e) => {
+    const isTokens = e.target.value === 'ai_tokens';
+    document.getElementById('groupIn').style.display = isTokens ? '' : 'none';
+    document.getElementById('groupTokenRow').style.display = isTokens ? '' : 'none';
+    document.getElementById('groupReasoning').style.display = isTokens ? '' : 'none';
+    updateCostEstimate();
+  });
+
+  ['simQty', 'simIn', 'simCache', 'simOut', 'simReasoning'].forEach((id) => {
+    document.getElementById(id).addEventListener('input', updateCostEstimate);
+  });
+
   /* Simulator Presets */
   document.getElementById('presetLlm').addEventListener('click', () => {
-    document.getElementById('simType').value = 'llm_token_usage';
+    document.getElementById('simType').value = 'ai_tokens';
     document.getElementById('simQty').value  = '1';
     document.getElementById('simIn').value   = '2048';
-    document.getElementById('simOut').value  = '512';
-    document.getElementById('simCache').value= '256';
+    document.getElementById('simCache').value= '512';
+    document.getElementById('simOut').value  = '1024';
+    document.getElementById('simReasoning').value = '128';
+    document.getElementById('simType').dispatchEvent(new Event('change'));
+    logActivity('sys', 'Applied standard LLM inference preset.');
   });
 
   document.getElementById('presetApi').addEventListener('click', () => {
     document.getElementById('simType').value = 'api_call';
-    document.getElementById('simQty').value  = '100';
+    document.getElementById('simQty').value  = '50';
     document.getElementById('simIn').value   = '0';
-    document.getElementById('simOut').value  = '0';
     document.getElementById('simCache').value= '0';
+    document.getElementById('simOut').value  = '0';
+    document.getElementById('simReasoning').value = '0';
+    document.getElementById('simType').dispatchEvent(new Event('change'));
+    logActivity('sys', 'Applied API batch call preset (50 requests).');
   });
 
-  document.getElementById('presetCompute').addEventListener('click', () => {
-    document.getElementById('simType').value = 'compute_minute';
-    document.getElementById('simQty').value  = '60';
-    document.getElementById('simIn').value   = '0';
-    document.getElementById('simOut').value  = '0';
-    document.getElementById('simCache').value= '0';
+  document.getElementById('presetHeavy').addEventListener('click', () => {
+    document.getElementById('simType').value = 'ai_tokens';
+    document.getElementById('simQty').value  = '1';
+    document.getElementById('simIn').value   = '8192';
+    document.getElementById('simCache').value= '2048';
+    document.getElementById('simOut').value  = '2048';
+    document.getElementById('simReasoning').value = '1024';
+    document.getElementById('simType').dispatchEvent(new Event('change'));
+    logActivity('sys', 'Applied Deep Reasoning preset.');
   });
 
   document.getElementById('clearSimBtn').addEventListener('click', () => {
     document.getElementById('simForm').reset();
     document.getElementById('simCust').value = activeTenant;
+    document.getElementById('simIdem').value = generateIdempotencyKey();
+    document.getElementById('simType').dispatchEvent(new Event('change'));
   });
 
   /* Event Ingestion */
@@ -1083,16 +1289,21 @@ body {
     btn.disabled = true;
     btn.textContent = 'Injecting...';
 
+    const evtType = document.getElementById('simType').value;
+    const isTokens = evtType === 'ai_tokens';
+
     const payload = {
-      customer_id:   document.getElementById('simCust').value.trim(),
-      event_type:    document.getElementById('simType').value,
-      quantity:      parseInt(document.getElementById('simQty').value, 10) || 1,
-      input_tokens:  parseInt(document.getElementById('simIn').value, 10) || 0,
-      output_tokens: parseInt(document.getElementById('simOut').value, 10) || 0,
-      cached_tokens: parseInt(document.getElementById('simCache').value, 10) || 0,
+      tenant_id:           document.getElementById('simCust').value.trim() || activeTenant,
+      event_type:          evtType,
+      quantity:            parseInt(document.getElementById('simQty').value, 10) || 1,
+      idempotency_key:     document.getElementById('simIdem').value.trim() || generateIdempotencyKey(),
+      input_tokens:        isTokens ? (parseInt(document.getElementById('simIn').value, 10) || 0) : 0,
+      cached_input_tokens: isTokens ? (parseInt(document.getElementById('simCache').value, 10) || 0) : 0,
+      output_tokens:       isTokens ? (parseInt(document.getElementById('simOut').value, 10) || 0) : 0,
+      reasoning_tokens:    isTokens ? (parseInt(document.getElementById('simReasoning').value, 10) || 0) : 0
     };
 
-    logActivity('info', `POST /api/v1/events payload: ${JSON.stringify(payload)}`);
+    logActivity('info', `POST /api/v1/events: ${evtType} (${payload.idempotency_key.substring(0, 8)}...)`);
 
     try {
       const res = await fetch(`${API_ROOT}/api/v1/events`, {
@@ -1101,9 +1312,17 @@ body {
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || JSON.stringify(data));
-      logActivity('ok', `Event registered: ID ${data.id || data.event_id || 'OK'} (${data.cost_cents ?? data.total_cost_cents ?? 0}¢)`);
-      notify('Metered event recorded', 'ok');
+      if (!res.ok) {
+        throw new Error(formatApiError(data));
+      }
+
+      logActivity('ok', `Event registered: ID ${data.id.substring(0, 8)}... (${data.cost_microcents} µ¢ · ${data.cost_cents}¢)`);
+      notify(`Event recorded (+${data.cost_cents}¢)`, 'ok');
+      
+      // Rotate idempotency key to prevent accidental duplicate submission
+      document.getElementById('simIdem').value = generateIdempotencyKey();
+      
+      // Auto refresh metrics
       setTimeout(fetchMetrics, 350);
     } catch (err) {
       logActivity('err', `Event failed: ${err.message}`);
@@ -1120,18 +1339,21 @@ body {
     btn.disabled = true;
     btn.textContent = 'Generating...';
 
-    logActivity('info', `POST /api/v1/invoices for ${activeTenant}`);
+    logActivity('info', `POST /api/v1/customers/${activeTenant}/invoices`);
 
     try {
-      const res = await fetch(`${API_ROOT}/api/v1/invoices`, {
+      const res = await fetch(`${API_ROOT}/api/v1/customers/${encodeURIComponent(activeTenant)}/invoices`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customer_id: activeTenant }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || JSON.stringify(data));
-      logActivity('ok', `Invoice created: ID ${data.invoice_id || data.id} (Amount: ${data.total_amount_cents ?? data.total_cost_cents ?? 0}¢)`);
-      notify(`Invoice generated for ${activeTenant}`, 'ok');
+      if (!res.ok) {
+        throw new Error(formatApiError(data));
+      }
+
+      const totalUsd = (data.total_cents / 100).toFixed(2);
+      logActivity('ok', `Invoice created: ID ${data.id.substring(0, 8)}... (Total: $${totalUsd})`);
+      notify(`Invoice generated: $${totalUsd}`, 'ok');
       await fetchInvoices();
     } catch (err) {
       logActivity('err', `Invoice creation failed: ${err.message}`);
@@ -1147,64 +1369,56 @@ body {
     const tbody = document.getElementById('invoiceBody');
     tbody.innerHTML = '<tr><td colspan="7"><div class="empty-ledger">Querying invoice records...</div></td></tr>';
 
-    const routes = [
-      `/api/v1/customers/${encodeURIComponent(activeTenant)}/invoices`,
-      `/api/v1/invoices?customer_id=${encodeURIComponent(activeTenant)}`,
-      `/api/v1/invoices`,
-    ];
+    try {
+      const res = await fetch(`${API_ROOT}/api/v1/customers/${encodeURIComponent(activeTenant)}/invoices`);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatApiError(errData) || `HTTP ${res.status}`);
+      }
 
-    let results = null;
-    for (const route of routes) {
-      try {
-        const res = await fetch(`${API_ROOT}${route}`);
-        if (res.ok) {
-          const body = await res.json();
-          results = Array.isArray(body) ? body : (body.invoices || body.items || []);
-          break;
-        }
-      } catch (_) {}
+      const invoices = await res.json();
+      if (!Array.isArray(invoices) || !invoices.length) {
+        tbody.innerHTML = '<tr><td colspan="7"><div class="empty-ledger">No invoices recorded yet for this tenant.</div></td></tr>';
+        document.getElementById('invoiceCount').textContent = '0 recorded';
+        return;
+      }
+
+      document.getElementById('invoiceCount').textContent = `${invoices.length} recorded`;
+      tbody.innerHTML = '';
+
+      invoices.forEach((inv) => {
+        const invId   = inv.id || 'N/A';
+        const tenant  = inv.tenant_id || activeTenant;
+        const created = inv.created_at ? new Date(inv.created_at).toLocaleString() : 'N/A';
+        const pStart  = inv.period_start ? new Date(inv.period_start).toLocaleDateString() : '';
+        const pEnd    = inv.period_end ? new Date(inv.period_end).toLocaleDateString() : '';
+        const period  = pStart && pEnd ? `${pStart} → ${pEnd}` : 'Current';
+        
+        const baseUsd  = ((inv.base_fee_cents || 0) / 100).toFixed(2);
+        const usageUsd = ((inv.usage_fee_cents || 0) / 100).toFixed(2);
+        const totalUsd = ((inv.total_cents || 0) / 100).toFixed(2);
+        const status   = (inv.status || 'open').toLowerCase();
+        const badgeClass = status === 'paid' ? 'paid' : (status === 'open' ? 'open' : (status === 'overdue' ? 'overdue' : 'draft'));
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="mono" style="color:var(--text-muted);" title="${sanitize(invId)}">${sanitize(invId.substring(0, 8))}...</td>
+          <td class="mono">${sanitize(tenant)}</td>
+          <td style="color:var(--text-secondary);">${created}</td>
+          <td class="mono" style="font-size:11px; color:var(--text-muted);">${period}</td>
+          <td class="mono text-right" style="color:var(--text-secondary);">$${baseUsd} / $${usageUsd}</td>
+          <td class="mono text-right" style="font-weight:700; color:var(--text-pure);">$${totalUsd}</td>
+          <td><span class="status-badge ${badgeClass}">${status}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="7"><div class="empty-ledger" style="color:var(--rose);">Failed to retrieve invoices: ${sanitize(err.message)}</div></td></tr>`;
+      logActivity('err', `Invoice fetch failed: ${err.message}`);
     }
-
-    if (results === null) {
-      tbody.innerHTML = '<tr><td colspan="7"><div class="empty-ledger">Invoice listing route is not enabled on this backend.</div></td></tr>';
-      return;
-    }
-
-    if (!results.length) {
-      tbody.innerHTML = '<tr><td colspan="7"><div class="empty-ledger">No invoices recorded yet for this tenant.</div></td></tr>';
-      document.getElementById('invoiceCount').textContent = '0 recorded';
-      return;
-    }
-
-    document.getElementById('invoiceCount').textContent = `${results.length} recorded`;
-    tbody.innerHTML = '';
-
-    results.slice().reverse().forEach((inv) => {
-      const invId    = inv.invoice_id || inv.id || 'N/A';
-      const cust     = inv.customer_id || inv.tenant_id || activeTenant;
-      const created  = inv.created_at ? new Date(inv.created_at).toLocaleString() : 'N/A';
-      const cents    = inv.total_amount_cents ?? inv.total_cost_cents ?? 0;
-      const usdStr   = (cents / 100).toFixed(4);
-      const tokens   = (inv.total_tokens || 0).toLocaleString();
-      const events   = (inv.event_count || 0).toLocaleString();
-      const status   = (inv.status || 'draft').toLowerCase();
-      const badgeClass = status === 'paid' ? 'paid' : (status === 'overdue' ? 'overdue' : 'draft');
-
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td class="mono" style="color:var(--text-muted);">${sanitize(invId)}</td>
-        <td class="mono">${sanitize(cust)}</td>
-        <td style="color:var(--text-secondary);">${created}</td>
-        <td class="mono text-right" style="font-weight:700; color:var(--text-pure);">$${usdStr}</td>
-        <td class="mono text-right" style="color:var(--text-secondary);">${tokens}</td>
-        <td class="mono text-right" style="color:var(--text-secondary);">${events}</td>
-        <td><span class="status-badge ${badgeClass}">${status}</span></td>
-      `;
-      tbody.appendChild(tr);
-    });
   }
 
-  /* Parallel Data Synchronization (Vercel Eliminating Waterfalls Pattern) */
+  /* Parallel Data Synchronization (Vercel Waterfall Elimination) */
   async function syncAllData() {
     await Promise.allSettled([
       fetchHealth(),
@@ -1215,6 +1429,7 @@ body {
 
   /* Boot Sequence */
   (function init() {
+    updateCostEstimate();
     syncAllData();
     setInterval(syncAllData, 30000); // 30s background poll
   })();

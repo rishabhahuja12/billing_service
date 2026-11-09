@@ -75,3 +75,9 @@ class BillingService:
         db.commit()
         db.refresh(invoice)
         return InvoiceResponse.model_validate(invoice)
+
+    @staticmethod
+    def list_invoices(db: Session, tenant_id: str):
+        """Lists historical statement invoices for a tenant."""
+        invoices = db.query(Invoice).filter(Invoice.tenant_id == tenant_id).order_by(Invoice.created_at.desc()).all()
+        return [InvoiceResponse.model_validate(inv) for inv in invoices]

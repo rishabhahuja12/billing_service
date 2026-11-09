@@ -238,8 +238,13 @@ async def stripe_webhook(
     result = StripeSyncService.process_webhook_event(db, event_dict)
     return result
 
-# --- Invoice Generation ---
+# --- Invoice Generation & Listing ---
 @api_router.post("/customers/{tenant_id}/invoices", response_model=InvoiceResponse)
 def generate_invoice(tenant_id: str, db: Session = Depends(get_db)):
     """Generates statement invoice for tenant."""
     return BillingService.generate_invoice(db, tenant_id)
+
+@api_router.get("/customers/{tenant_id}/invoices", response_model=list[InvoiceResponse])
+def get_customer_invoices(tenant_id: str, db: Session = Depends(get_db)):
+    """Retrieves all historical statement invoices for tenant."""
+    return BillingService.list_invoices(db, tenant_id)
